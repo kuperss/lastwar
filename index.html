@@ -3,171 +3,338 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Last War 任務輪值查詢</title>
+    <title>Last War 戰略指揮中心</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <linkcdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --bg-color: #0a0e1a;
+            --card-bg: #131a2a;
+            --accent-color: #00d2ff; /* 科技藍 */
+            --accent-secondary: #9d00ff; /* 紫色 */
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --success-color: #4cd137;
+            --error-color: #e84118;
+        }
+
         body {
-            font-family: "Microsoft JhengHei", Arial, sans-serif;
-            background-color: #1a1a2e;
-            color: #e0e0e0;
+            font-family: 'Roboto', "Microsoft JhengHei", sans-serif;
+            background: radial-gradient(circle at top center, #1a233a 0%, var(--bg-color) 100%);
+            color: var(--text-primary);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
             padding: 20px;
+            box-sizing: border-box;
         }
+
         .container {
-            background-color: #16213e;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            background-color: var(--card-bg);
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
             max-width: 600px;
             width: 100%;
             text-align: center;
-            border: 1px solid #0f3460;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
+        
+        /* 頂部裝飾條 */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-secondary), var(--accent-color));
+        }
+
         h1 {
-            color: #e94560;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
             margin-bottom: 10px;
+            background: linear-gradient(to right, var(--accent-color), #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
+
         h2 {
-            margin-top: 5px;
-            font-size: 1.2rem;
-            color: #a8a8a8;
+            margin-top: 0;
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            font-weight: 400;
         }
-        .date-picker {
-            margin: 20px 0;
+
+        /* 日期選擇器區域優化 */
+        .control-panel {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
+
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            color: var(--accent-color);
+            z-index: 1;
+        }
+
         input[type="date"] {
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #0f3460;
-            background: #0f3460;
+            padding: 12px 15px 12px 45px; /* 留位置給圖標 */
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: #0a0e1a;
             color: white;
             font-size: 1rem;
+            font-family: 'Roboto', sans-serif;
+            outline: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
+
+        input[type="date"]:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+        }
+        
+        /* 結果顯示區塊優化 */
         .result-box {
-            background-color: #0f3460;
-            padding: 20px;
-            border-radius: 10px;
+            background: linear-gradient(145deg, #1a233a, #131a2a);
+            padding: 30px;
+            border-radius: 16px;
             margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
         }
+
         .group-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #ffd700;
-            margin-bottom: 15px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 25px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            letter-spacing: 1px;
         }
+
         .server-list {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
+            gap: 12px;
+        }
+
+        .server-badge {
+            background: linear-gradient(135deg, var(--accent-secondary), var(--accent-color));
+            color: white;
+            padding: 8px 16px;
+            border-radius: 30px; /* 膠囊狀 */
+            font-weight: 500;
+            font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        .server-badge:hover {
+            transform: translateY(-2px);
+        }
+
+        /* 搜尋區域優化 */
+        .search-section {
+            margin-top: 35px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .search-desc {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .search-bar {
+            display: flex;
+            justify-content: center;
             gap: 10px;
         }
-        .server-badge {
-            background-color: #e94560;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-weight: bold;
-            font-size: 0.9rem;
-        }
-        .search-section {
-            margin-top: 30px;
-            border-top: 1px solid #2c3e50;
-            padding-top: 20px;
-        }
+
         input[type="number"] {
-            padding: 10px;
-            border-radius: 5px;
-            border: none;
-            width: 100px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: #0a0e1a;
+            color: white;
+            width: 140px;
             text-align: center;
+            font-size: 1.1rem;
+            outline: none;
+            transition: all 0.3s;
+            font-family: 'Roboto', sans-serif;
         }
-        button {
-            padding: 10px 20px;
-            border-radius: 5px;
+
+        input[type="number"]:focus {
+             border-color: var(--accent-color);
+             box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+        }
+        
+        /* 隱藏 number input 的上下箭頭 */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+
+        .btn-search {
+            padding: 12px 25px;
+            border-radius: 8px;
             border: none;
-            background-color: #e94560;
+            background: linear-gradient(90deg, var(--accent-secondary), var(--accent-color));
             color: white;
             cursor: pointer;
             font-weight: bold;
-            margin-left: 10px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        button:hover {
-            background-color: #d13650;
+
+        .btn-search:hover {
+            filter: brightness(1.1);
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
         }
+        
+        .btn-search:active {
+            transform: scale(0.98);
+        }
+
         #searchResult {
-            margin-top: 10px;
-            font-weight: bold;
-            color: #4cd137;
+            margin-top: 20px;
+            font-weight: 500;
+            min-height: 25px;
+            font-size: 1.1rem;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .result-success {
+            color: var(--accent-color);
+            background: rgba(0, 210, 255, 0.1);
+        }
+        .result-error {
+            color: var(--error-color);
+            background: rgba(232, 65, 24, 0.1);
+        }
+        
+        /* 手機版適配微調 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+            h1 { font-size: 1.6rem; }
+            .group-title { font-size: 1.5rem; }
+            .control-panel { flex-direction: column; width: 100%; box-sizing: border-box;}
+            .input-group { width: 100%; }
+            input[type="date"] { width: 100%; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Last War 閃亮隱秘任務</h1>
-    <h2>伺服器輪值表</h2>
+    <h1>Last War 戰略指揮中心</h1>
+    <h2>閃亮隱秘任務輪值查詢</h2>
 
-    <div class="date-picker">
-        <label>選擇日期：</label>
-        <input type="date" id="dateInput">
+    <div class="control-panel">
+        <label for="dateInput" style="font-weight: 500;"><i class="far fa-calendar-alt"></i> 任務日期：</label>
+        <div class="input-group">
+            <i class="fas fa-calendar-day input-icon"></i>
+            <input type="date" id="dateInput">
+        </div>
     </div>
 
     <div class="result-box">
-        <div id="groupName" class="group-title">載入中...</div>
+        <div id="groupName" class="group-title">正在同步數據...</div>
         <div id="serverList" class="server-list"></div>
     </div>
 
     <div class="search-section">
-        <p>查詢特定伺服器歸屬：</p>
-        <input type="number" id="serverSearch" placeholder="例如 1381">
-        <button onclick="checkServer()">查詢</button>
+        <p class="search-desc"><i class="fas fa-search-location"></i> 查詢特定伺服器歸屬：</p>
+        <div class="search-bar">
+            <input type="number" id="serverSearch" placeholder="輸入伺服器號碼 (如 1381)">
+            <button class="btn-search" onclick="checkServer()"><i class="fas fa-search"></i> 查詢</button>
+        </div>
         <div id="searchResult"></div>
     </div>
 </div>
 
 <script>
-    // 伺服器資料配置
+    // 1. 伺服器資料配置
     const groups = {
         1: [1381, 1388, 1389, 1390, 1397, 1398, 1399, 1405, 1406, 1407, 1408],
         2: [1382, 1383, 1384, 1391, 1392, 1393, 1394, 1400, 1401, 1402, 1409, 1410, 1411, 1415, 1416, 1417, 1418],
         3: [1385, 1386, 1387, 1395, 1396, 1403, 1404, 1412, 1413, 1414, 1419, 1420]
     };
 
-    // 基準日設定：2025-12-14 是第二組
-    // 為了計算方便，我們反推基準日：2025-12-12 是第一組
+    // 2. 基準日設定：12/12，確保 12/14 顯示為第二組
     const baseDate = new Date('2025-12-12T00:00:00');
 
+    // 3. 核心邏輯：計算該日期是第幾組
     function getGroupForDate(inputDate) {
         const targetDate = new Date(inputDate);
-        targetDate.setHours(0, 0, 0, 0); // 確保只比較日期
+        targetDate.setHours(0, 0, 0, 0); 
         
-        // 計算天數差
         const diffTime = targetDate - baseDate;
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         
-        // 計算餘數 (MOD 3)
-        // 為了處理過去的日期導致負數，加上一個足夠大的3的倍數
         let cycleIndex = (diffDays % 3 + 3) % 3;
         
-        // 0 -> Group 1, 1 -> Group 2, 2 -> Group 3 (因基準日設為第一組那天)
-        // 對應 groups 的 key 是 1, 2, 3，所以要 +1
-        return cycleIndex === 0 ? 3 : cycleIndex;
+        if (cycleIndex === 0) return 3;
+        if (cycleIndex === 1) return 1;
+        if (cycleIndex === 2) return 2;
     }
 
+    // 4. 更新畫面顯示
     function updateDisplay() {
         const dateInput = document.getElementById('dateInput').value;
         if (!dateInput) return;
 
         const groupNum = getGroupForDate(new Date(dateInput));
         
-        // 更新標題
         const groupTexts = ["", "第一組 (Group 1)", "第二組 (Group 2)", "第三組 (Group 3)"];
-        document.getElementById('groupName').innerText = groupTexts[groupNum];
+        const titleEl = document.getElementById('groupName');
+        titleEl.innerText = groupTexts[groupNum];
+        
+        // 根據組別變換文字顏色 (使用 CSS 變數定義的顏色)
+        titleEl.style.color = "var(--text-primary)";
+        if(groupNum === 1) titleEl.style.color = "#ffd700"; // 金黃保持不變，比較醒目
+        if(groupNum === 2) titleEl.style.color = "var(--accent-color)"; // 科技藍
+        if(groupNum === 3) titleEl.style.color = "#ff00d4"; // 霓虹粉
 
-        // 更新清單
         const listContainer = document.getElementById('serverList');
         listContainer.innerHTML = '';
         groups[groupNum].sort((a,b) => a-b).forEach(server => {
@@ -178,9 +345,20 @@
         });
     }
 
+    // 5. 查詢功能 (優化顯示樣式)
     function checkServer() {
-        const serverNum = parseInt(document.getElementById('serverSearch').value);
-        if (!serverNum) return;
+        const serverInput = document.getElementById('serverSearch');
+        const serverNum = parseInt(serverInput.value);
+        const resultDiv = document.getElementById('searchResult');
+        
+        // 清除之前的樣式類別
+        resultDiv.className = '';
+
+        if (!serverNum) {
+            resultDiv.innerText = "請輸入有效的伺服器號碼";
+            resultDiv.classList.add('result-error');
+            return;
+        }
 
         let foundGroup = null;
         for (let g in groups) {
@@ -190,31 +368,53 @@
             }
         }
 
-        const resultDiv = document.getElementById('searchResult');
         if (foundGroup) {
-            resultDiv.innerText = `伺服器 ${serverNum} 屬於：第 ${foundGroup} 組`;
-            resultDiv.style.color = '#4cd137';
+            resultDiv.innerHTML = `<i class="fas fa-check-circle"></i> 伺服器 <b>${serverNum}</b> 屬於：第 ${foundGroup} 組`;
+            resultDiv.classList.add('result-success');
         } else {
-            resultDiv.innerText = `找不到伺服器 ${serverNum}，請確認是否在清單範圍內。`;
-            resultDiv.style.color = '#e74c3c';
+            resultDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> 找不到伺服器 <b>${serverNum}</b>，請確認是否在清單範圍內。`;
+            resultDiv.classList.add('result-error');
         }
     }
-
-    // 初始化：設定為今天
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    document.getElementById('dateInput').value = `${yyyy}-${mm}-${dd}`;
     
+    // 綁定 Enter 鍵搜尋
+    document.getElementById('serverSearch').addEventListener('keypress', function(e) {
+        if(e.key === 'Enter') checkServer();
+    });
+
+    // 6. 初始化與「台灣時間早上10點換日」邏輯
+    function initDate() {
+        const now = new Date();
+        
+        // 強制轉換為台灣時間 (UTC+8)
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const taiwanTime = new Date(utc + (3600000 * 8));
+
+        // 取得台灣時間的小時
+        const currentHour = taiwanTime.getHours();
+
+        // 如果還沒到早上 10 點，日期要算前一天
+        if (currentHour < 10) {
+            taiwanTime.setDate(taiwanTime.getDate() - 1);
+        }
+
+        const yyyy = taiwanTime.getFullYear();
+        const mm = String(taiwanTime.getMonth() + 1).padStart(2, '0');
+        const dd = String(taiwanTime.getDate()).padStart(2, '0');
+        
+        document.getElementById('dateInput').value = `${yyyy}-${mm}-${dd}`;
+        
+        // 執行一次顯示
+        updateDisplay();
+    }
+
     // 綁定事件
     document.getElementById('dateInput').addEventListener('change', updateDisplay);
     
-    // 執行一次
-    updateDisplay();
+    // 啟動程式
+    initDate();
 
 </script>
 
 </body>
-
 </html>
