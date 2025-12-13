@@ -2,308 +2,267 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Last War 戰略指揮中心</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-    <linkcdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0a0e1a;
-            --card-bg: #131a2a;
-            --accent-color: #00d2ff; /* 科技藍 */
-            --accent-secondary: #9d00ff; /* 紫色 */
-            --text-primary: #ffffff;
-            --text-secondary: #a0aec0;
-            --success-color: #4cd137;
-            --error-color: #e84118;
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #3b82f6;   /* 科技藍 */
+            --accent: #8b5cf6;    /* 紫色 */
+            --gold: #f59e0b;      /* 金色 */
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
         }
 
         body {
             font-family: 'Roboto', "Microsoft JhengHei", sans-serif;
-            background: radial-gradient(circle at top center, #1a233a 0%, var(--bg-color) 100%);
-            color: var(--text-primary);
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
+            /* 背景裝飾 */
+            background-image: radial-gradient(circle at 50% 0%, #2e1065 0%, var(--bg-dark) 60%);
         }
 
         .container {
-            background-color: var(--card-bg);
-            padding: 40px 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-            max-width: 600px;
-            width: 100%;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
+            background-color: rgba(30, 41, 59, 0.9);
+            width: 90%;
+            max-width: 500px; /* 電腦版最大寬度 */
+            padding: 2rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin: 20px auto;
+            box-sizing: border-box; /* 確保 padding 不會撐大寬度 */
         }
-        
-        /* 頂部裝飾條 */
-        .container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: linear-gradient(90deg, var(--accent-secondary), var(--accent-color));
+
+        /* 標題區域 */
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
         }
 
         h1 {
             font-family: 'Orbitron', sans-serif;
-            font-size: 2rem;
-            margin-bottom: 10px;
-            background: linear-gradient(to right, var(--accent-color), #fff);
+            font-size: 1.8rem;
+            margin: 0;
+            background: linear-gradient(135deg, #60a5fa, #c084fc);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-transform: uppercase;
             letter-spacing: 1px;
         }
 
         h2 {
-            margin-top: 0;
-            font-size: 1.1rem;
-            color: var(--text-secondary);
-            margin-bottom: 30px;
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            margin-top: 0.5rem;
             font-weight: 400;
         }
 
-        /* 日期選擇器區域優化 */
-        .control-panel {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 25px;
-            display: inline-flex;
-            align-items: center;
-            gap: 15px;
+        /* 日期選擇器 */
+        .control-group {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1rem;
+            border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
         }
 
-        .input-group {
-            position: relative;
+        .label-text {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            font-weight: 500;
             display: flex;
             align-items: center;
-        }
-
-        .input-icon {
-            position: absolute;
-            left: 15px;
-            color: var(--accent-color);
-            z-index: 1;
+            gap: 0.5rem;
         }
 
         input[type="date"] {
-            padding: 12px 15px 12px 45px; /* 留位置給圖標 */
-            border-radius: 8px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            background: #0a0e1a;
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-dark);
+            border: 2px solid #334155;
+            border-radius: 12px;
             color: white;
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-family: 'Roboto', sans-serif;
+            box-sizing: border-box; /* 防止超出容器 */
             outline: none;
-            transition: all 0.3s ease;
-            cursor: pointer;
+            transition: border-color 0.3s;
         }
 
         input[type="date"]:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
-        }
-        
-        /* 結果顯示區塊優化 */
-        .result-box {
-            background: linear-gradient(145deg, #1a233a, #131a2a);
-            padding: 30px;
-            border-radius: 16px;
-            margin-top: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+            border-color: var(--primary);
         }
 
-        .group-title {
+        /* 結果顯示區 */
+        .result-card {
+            background: linear-gradient(180deg, #2d3748 0%, #1a202c 100%);
+            border-radius: 20px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+            min-height: 200px; /* 防止載入時跳動 */
+        }
+
+        .group-name {
             font-family: 'Orbitron', sans-serif;
             font-size: 1.8rem;
             font-weight: 700;
-            margin-bottom: 25px;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-            letter-spacing: 1px;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
 
-        .server-list {
+        .server-grid {
             display: flex;
             flex-wrap: wrap;
-            justify-content: center;
-            gap: 12px;
-        }
-
-        .server-badge {
-            background: linear-gradient(135deg, var(--accent-secondary), var(--accent-color));
-            color: white;
-            padding: 8px 16px;
-            border-radius: 30px; /* 膠囊狀 */
-            font-weight: 500;
-            font-size: 1rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            transition: transform 0.2s;
-            font-family: 'Roboto', sans-serif;
-        }
-        
-        .server-badge:hover {
-            transform: translateY(-2px);
-        }
-
-        /* 搜尋區域優化 */
-        .search-section {
-            margin-top: 35px;
-            padding-top: 25px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .search-desc {
-            font-size: 0.95rem;
-            color: var(--text-secondary);
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
             justify-content: center;
             gap: 8px;
         }
 
-        .search-bar {
+        .badge {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .badge.highlight {
+             background: var(--primary);
+             box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+
+        /* 搜尋區 */
+        .search-area {
+            margin-top: 2rem;
+            border-top: 1px solid #334155;
+            padding-top: 1.5rem;
+        }
+
+        .input-row {
             display: flex;
-            justify-content: center;
             gap: 10px;
         }
 
         input[type="number"] {
-            padding: 12px 20px;
-            border-radius: 8px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            background: #0a0e1a;
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            border: 2px solid #334155;
+            background: var(--bg-dark);
             color: white;
-            width: 140px;
+            font-size: 1rem;
             text-align: center;
-            font-size: 1.1rem;
             outline: none;
-            transition: all 0.3s;
-            font-family: 'Roboto', sans-serif;
-        }
-
-        input[type="number"]:focus {
-             border-color: var(--accent-color);
-             box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
         }
         
-        /* 隱藏 number input 的上下箭頭 */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
+        input[type="number"]:focus {
+            border-color: var(--accent);
         }
 
         .btn-search {
-            padding: 12px 25px;
-            border-radius: 8px;
-            border: none;
-            background: linear-gradient(90deg, var(--accent-secondary), var(--accent-color));
+            background: var(--accent);
             color: white;
-            cursor: pointer;
+            border: none;
+            padding: 0 20px;
+            border-radius: 12px;
             font-weight: bold;
-            font-size: 1rem;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            cursor: pointer;
+            transition: transform 0.1s;
         }
 
-        .btn-search:hover {
-            filter: brightness(1.1);
-            box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
-        }
-        
         .btn-search:active {
-            transform: scale(0.98);
+            transform: scale(0.95);
         }
 
         #searchResult {
-            margin-top: 20px;
+            margin-top: 1rem;
+            font-size: 0.95rem;
+            min-height: 1.5rem;
             font-weight: 500;
-            min-height: 25px;
-            font-size: 1.1rem;
-            padding: 10px;
-            border-radius: 8px;
         }
-        .result-success {
-            color: var(--accent-color);
-            background: rgba(0, 210, 255, 0.1);
-        }
-        .result-error {
-            color: var(--error-color);
-            background: rgba(232, 65, 24, 0.1);
-        }
-        
-        /* 手機版適配微調 */
+
+        /* ========== 手機版 RWD 調整 ========== */
         @media (max-width: 480px) {
             .container {
-                padding: 30px 20px;
+                width: 95%; /* 手機上更寬一點 */
+                padding: 1.5rem;
+                margin: 10px auto;
             }
-            h1 { font-size: 1.6rem; }
-            .group-title { font-size: 1.5rem; }
-            .control-panel { flex-direction: column; width: 100%; box-sizing: border-box;}
-            .input-group { width: 100%; }
-            input[type="date"] { width: 100%; }
+
+            h1 {
+                font-size: 1.5rem; /* 標題縮小 */
+            }
+
+            .group-name {
+                font-size: 1.5rem; /* 組別名稱縮小 */
+            }
+            
+            .badge {
+                font-size: 0.9rem; /* 數字稍微縮小以容納更多 */
+                padding: 6px 10px;
+            }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Last War 戰略指揮中心</h1>
-    <h2>閃亮隱秘任務輪值查詢</h2>
+    <header>
+        <h1>閃亮隱祕任務速查工具</h1>
+        <h2>專屬於KT 的每位小夥伴</h2>
+    </header>
 
-    <div class="control-panel">
-        <label for="dateInput" style="font-weight: 500;"><i class="far fa-calendar-alt"></i> 任務日期：</label>
-        <div class="input-group">
-            <i class="fas fa-calendar-day input-icon"></i>
-            <input type="date" id="dateInput">
-        </div>
+    <div class="control-group">
+        <div class="label-text"><i class="far fa-calendar-alt"></i> 選擇日期 (自動校正 10:00 AM)</div>
+        <input type="date" id="dateInput">
     </div>
 
-    <div class="result-box">
-        <div id="groupName" class="group-title">正在同步數據...</div>
-        <div id="serverList" class="server-list"></div>
+    <div class="result-card">
+        <div id="groupName" class="group-name">計算中...</div>
+        <div id="serverList" class="server-grid"></div>
     </div>
 
-    <div class="search-section">
-        <p class="search-desc"><i class="fas fa-search-location"></i> 查詢特定伺服器歸屬：</p>
-        <div class="search-bar">
-            <input type="number" id="serverSearch" placeholder="輸入伺服器號碼 (如 1381)">
-            <button class="btn-search" onclick="checkServer()"><i class="fas fa-search"></i> 查詢</button>
+    <div class="search-area">
+        <div class="label-text" style="margin-bottom:10px;"><i class="fas fa-search"></i> 查詢特定伺服器</div>
+        <div class="input-row">
+            <input type="number" id="serverSearch" placeholder="輸入號碼 (如 1381)">
+            <button class="btn-search" onclick="checkServer()">查詢</button>
         </div>
         <div id="searchResult"></div>
     </div>
 </div>
 
 <script>
-    // 1. 伺服器資料配置
+    // 1. 資料庫
     const groups = {
         1: [1381, 1388, 1389, 1390, 1397, 1398, 1399, 1405, 1406, 1407, 1408],
         2: [1382, 1383, 1384, 1391, 1392, 1393, 1394, 1400, 1401, 1402, 1409, 1410, 1411, 1415, 1416, 1417, 1418],
         3: [1385, 1386, 1387, 1395, 1396, 1403, 1404, 1412, 1413, 1414, 1419, 1420]
     };
 
-    // 2. 基準日設定：12/12，確保 12/14 顯示為第二組
+    // 2. 邏輯校正區
+    // 目標：12/13 必須是第二組
+    // 推算：如果 12/13 是 Group 2，那麼 12/12 必須是 Group 1。
+    // 設定基準日為 12/12 (Group 1)
     const baseDate = new Date('2025-12-12T00:00:00');
 
-    // 3. 核心邏輯：計算該日期是第幾組
     function getGroupForDate(inputDate) {
         const targetDate = new Date(inputDate);
         targetDate.setHours(0, 0, 0, 0); 
@@ -311,52 +270,62 @@
         const diffTime = targetDate - baseDate;
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         
-        let cycleIndex = (diffDays % 3 + 3) % 3;
+        // 數學邏輯：
+        // 12/12 (diff 0) -> 餘數 0 -> 對應 Group 1
+        // 12/13 (diff 1) -> 餘數 1 -> 對應 Group 2
+        // 12/14 (diff 2) -> 餘數 2 -> 對應 Group 3
         
-        if (cycleIndex === 0) return 3;
-        if (cycleIndex === 1) return 1;
-        if (cycleIndex === 2) return 2;
+        let cycleIndex = (diffDays % 3 + 3) % 3; // +3防止負數
+
+        if (cycleIndex === 0) return 1;
+        if (cycleIndex === 1) return 2;
+        if (cycleIndex === 2) return 3;
     }
 
-    // 4. 更新畫面顯示
     function updateDisplay() {
         const dateInput = document.getElementById('dateInput').value;
         if (!dateInput) return;
 
         const groupNum = getGroupForDate(new Date(dateInput));
         
-        const groupTexts = ["", "第一組 (Group 1)", "第二組 (Group 2)", "第三組 (Group 3)"];
-        const titleEl = document.getElementById('groupName');
-        titleEl.innerText = groupTexts[groupNum];
+        const groupTitles = {
+            1: "第一組 (Group 1)",
+            2: "第二組 (Group 2)",
+            3: "第三組 (Group 3)"
+        };
         
-        // 根據組別變換文字顏色 (使用 CSS 變數定義的顏色)
-        titleEl.style.color = "var(--text-primary)";
-        if(groupNum === 1) titleEl.style.color = "#ffd700"; // 金黃保持不變，比較醒目
-        if(groupNum === 2) titleEl.style.color = "var(--accent-color)"; // 科技藍
-        if(groupNum === 3) titleEl.style.color = "#ff00d4"; // 霓虹粉
+        const titleEl = document.getElementById('groupName');
+        titleEl.innerText = groupTitles[groupNum];
+        
+        // 顏色切換
+        titleEl.style.color = "white";
+        if(groupNum === 1) titleEl.style.color = "#f59e0b"; // 金
+        if(groupNum === 2) titleEl.style.color = "#10b981"; // 綠
+        if(groupNum === 3) titleEl.style.color = "#3b82f6"; // 藍
 
         const listContainer = document.getElementById('serverList');
         listContainer.innerHTML = '';
         groups[groupNum].sort((a,b) => a-b).forEach(server => {
             const badge = document.createElement('div');
-            badge.className = 'server-badge';
+            badge.className = 'badge';
+            // 讓伺服器號碼如果是搜尋目標則高亮 (選擇性功能，這邊先統一)
+            if(groupNum === 1) badge.style.borderColor = "#f59e0b";
+            if(groupNum === 2) badge.style.borderColor = "#10b981";
+            if(groupNum === 3) badge.style.borderColor = "#3b82f6";
+            
             badge.innerText = server;
             listContainer.appendChild(badge);
         });
     }
 
-    // 5. 查詢功能 (優化顯示樣式)
     function checkServer() {
         const serverInput = document.getElementById('serverSearch');
         const serverNum = parseInt(serverInput.value);
         const resultDiv = document.getElementById('searchResult');
         
-        // 清除之前的樣式類別
-        resultDiv.className = '';
-
         if (!serverNum) {
-            resultDiv.innerText = "請輸入有效的伺服器號碼";
-            resultDiv.classList.add('result-error');
+            resultDiv.innerText = "請輸入號碼";
+            resultDiv.style.color = "var(--danger)";
             return;
         }
 
@@ -369,31 +338,27 @@
         }
 
         if (foundGroup) {
-            resultDiv.innerHTML = `<i class="fas fa-check-circle"></i> 伺服器 <b>${serverNum}</b> 屬於：第 ${foundGroup} 組`;
-            resultDiv.classList.add('result-success');
+            resultDiv.innerHTML = `<span style="color:var(--success)"><i class="fas fa-check"></i> 伺服器 ${serverNum} 是第 ${foundGroup} 組</span>`;
         } else {
-            resultDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> 找不到伺服器 <b>${serverNum}</b>，請確認是否在清單範圍內。`;
-            resultDiv.classList.add('result-error');
+            resultDiv.innerHTML = `<span style="color:var(--danger)"><i class="fas fa-times"></i> 找不到伺服器 ${serverNum}</span>`;
         }
     }
     
-    // 綁定 Enter 鍵搜尋
+    // 綁定 Enter 鍵
     document.getElementById('serverSearch').addEventListener('keypress', function(e) {
         if(e.key === 'Enter') checkServer();
     });
 
-    // 6. 初始化與「台灣時間早上10點換日」邏輯
     function initDate() {
         const now = new Date();
         
-        // 強制轉換為台灣時間 (UTC+8)
+        // 台灣時間轉換 (UTC+8)
         const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
         const taiwanTime = new Date(utc + (3600000 * 8));
 
-        // 取得台灣時間的小時
         const currentHour = taiwanTime.getHours();
 
-        // 如果還沒到早上 10 點，日期要算前一天
+        // 10點前算前一天
         if (currentHour < 10) {
             taiwanTime.setDate(taiwanTime.getDate() - 1);
         }
@@ -403,15 +368,10 @@
         const dd = String(taiwanTime.getDate()).padStart(2, '0');
         
         document.getElementById('dateInput').value = `${yyyy}-${mm}-${dd}`;
-        
-        // 執行一次顯示
         updateDisplay();
     }
 
-    // 綁定事件
     document.getElementById('dateInput').addEventListener('change', updateDisplay);
-    
-    // 啟動程式
     initDate();
 
 </script>
