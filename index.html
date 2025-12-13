@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Last War 任務輪值查詢</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background-color: #16213e;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid #0f3460;
+        }
+        h1 {
+            color: #e94560;
+            margin-bottom: 10px;
+        }
+        h2 {
+            margin-top: 5px;
+            font-size: 1.2rem;
+            color: #a8a8a8;
+        }
+        .date-picker {
+            margin: 20px 0;
+        }
+        input[type="date"] {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #0f3460;
+            background: #0f3460;
+            color: white;
+            font-size: 1rem;
+        }
+        .result-box {
+            background-color: #0f3460;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .group-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 15px;
+        }
+        .server-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .server-badge {
+            background-color: #e94560;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        .search-section {
+            margin-top: 30px;
+            border-top: 1px solid #2c3e50;
+            padding-top: 20px;
+        }
+        input[type="number"] {
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            width: 100px;
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: none;
+            background-color: #e94560;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        button:hover {
+            background-color: #d13650;
+        }
+        #searchResult {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #4cd137;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Last War 閃亮隱秘任務</h1>
+    <h2>伺服器輪值表</h2>
+
+    <div class="date-picker">
+        <label>選擇日期：</label>
+        <input type="date" id="dateInput">
+    </div>
+
+    <div class="result-box">
+        <div id="groupName" class="group-title">載入中...</div>
+        <div id="serverList" class="server-list"></div>
+    </div>
+
+    <div class="search-section">
+        <p>查詢特定伺服器歸屬：</p>
+        <input type="number" id="serverSearch" placeholder="例如 1381">
+        <button onclick="checkServer()">查詢</button>
+        <div id="searchResult"></div>
+    </div>
+</div>
+
+<script>
+    // 伺服器資料配置
+    const groups = {
+        1: [1381, 1388, 1389, 1390, 1397, 1398, 1399, 1405, 1406, 1407, 1408],
+        2: [1382, 1383, 1384, 1391, 1392, 1393, 1394, 1400, 1401, 1402, 1409, 1410, 1411, 1415, 1416, 1417, 1418],
+        3: [1385, 1386, 1387, 1395, 1396, 1403, 1404, 1412, 1413, 1414, 1419, 1420]
+    };
+
+    // 基準日設定：2025-12-14 是第二組
+    // 為了計算方便，我們反推基準日：2025-12-13 是第一組
+    const baseDate = new Date('2025-12-13T00:00:00');
+
+    function getGroupForDate(inputDate) {
+        const targetDate = new Date(inputDate);
+        targetDate.setHours(0, 0, 0, 0); // 確保只比較日期
+        
+        // 計算天數差
+        const diffTime = targetDate - baseDate;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
+        // 計算餘數 (MOD 3)
+        // 為了處理過去的日期導致負數，加上一個足夠大的3的倍數
+        let cycleIndex = (diffDays % 3 + 3) % 3;
+        
+        // 0 -> Group 1, 1 -> Group 2, 2 -> Group 3 (因基準日設為第一組那天)
+        // 對應 groups 的 key 是 1, 2, 3，所以要 +1
+        return cycleIndex === 0 ? 3 : cycleIndex;
+    }
+
+    function updateDisplay() {
+        const dateInput = document.getElementById('dateInput').value;
+        if (!dateInput) return;
+
+        const groupNum = getGroupForDate(new Date(dateInput));
+        
+        // 更新標題
+        const groupTexts = ["", "第一組 (Group 1)", "第二組 (Group 2)", "第三組 (Group 3)"];
+        document.getElementById('groupName').innerText = groupTexts[groupNum];
+
+        // 更新清單
+        const listContainer = document.getElementById('serverList');
+        listContainer.innerHTML = '';
+        groups[groupNum].sort((a,b) => a-b).forEach(server => {
+            const badge = document.createElement('div');
+            badge.className = 'server-badge';
+            badge.innerText = server;
+            listContainer.appendChild(badge);
+        });
+    }
+
+    function checkServer() {
+        const serverNum = parseInt(document.getElementById('serverSearch').value);
+        if (!serverNum) return;
+
+        let foundGroup = null;
+        for (let g in groups) {
+            if (groups[g].includes(serverNum)) {
+                foundGroup = g;
+                break;
+            }
+        }
+
+        const resultDiv = document.getElementById('searchResult');
+        if (foundGroup) {
+            resultDiv.innerText = `伺服器 ${serverNum} 屬於：第 ${foundGroup} 組`;
+            resultDiv.style.color = '#4cd137';
+        } else {
+            resultDiv.innerText = `找不到伺服器 ${serverNum}，請確認是否在清單範圍內。`;
+            resultDiv.style.color = '#e74c3c';
+        }
+    }
+
+    // 初始化：設定為今天
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    document.getElementById('dateInput').value = `${yyyy}-${mm}-${dd}`;
+    
+    // 綁定事件
+    document.getElementById('dateInput').addEventListener('change', updateDisplay);
+    
+    // 執行一次
+    updateDisplay();
+
+</script>
+
+</body>
+</html>
