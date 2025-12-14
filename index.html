@@ -20,7 +20,8 @@
         }
 
         body {
-            font-family: 'Roboto', "Microsoft JhengHei", sans-serif;
+            /* 修改重點：將 "Microsoft JhengHei" 移到第一順位 */
+            font-family: "Microsoft JhengHei", 'Roboto', sans-serif;
             background-color: var(--bg-dark);
             color: var(--text-main);
             margin: 0;
@@ -52,7 +53,7 @@
         }
 
         h1 {
-            font-family: 'Orbitron', sans-serif;
+            font-family: 'Orbitron', sans-serif; /* 標題保留科技感英文字體，中文會自動吃到正黑體 */
             font-size: 1.8rem;
             margin: 0;
             background: linear-gradient(135deg, #60a5fa, #c084fc);
@@ -97,7 +98,7 @@
             border-radius: 12px;
             color: white;
             font-size: 1.1rem;
-            font-family: 'Roboto', sans-serif;
+            font-family: "Microsoft JhengHei", sans-serif; /* 確保輸入框也用正黑體 */
             box-sizing: border-box; /* 防止超出容器 */
             outline: none;
             transition: border-color 0.3s;
@@ -122,7 +123,7 @@
         }
 
         .group-name {
-            font-family: 'Orbitron', sans-serif;
+            font-family: 'Orbitron', sans-serif; /* 保留英文數字的科技感 */
             font-size: 1.8rem;
             font-weight: 700;
             margin-bottom: 1.5rem;
@@ -165,6 +166,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            font-family: "Microsoft JhengHei", sans-serif;
         }
         
         .btn-copy:hover {
@@ -177,9 +179,21 @@
             transform: scale(0.95);
         }
 
+        /* 作者簽名樣式 - 修改重點 */
+        .author-tag {
+            text-align: right; /* 修改為靠右對齊 */
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 10px;
+            margin-bottom: 5px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            padding-right: 5px; /* 增加一點右側間距，視覺上比較平衡 */
+        }
+
         /* 搜尋區 */
         .search-area {
-            margin-top: 2rem;
+            margin-top: 1.5rem;
             border-top: 1px solid #334155;
             padding-top: 1.5rem;
         }
@@ -199,6 +213,7 @@
             font-size: 1rem;
             text-align: center;
             outline: none;
+            font-family: "Microsoft JhengHei", sans-serif;
         }
         
         input[type="number"]:focus {
@@ -214,6 +229,7 @@
             font-weight: bold;
             cursor: pointer;
             transition: transform 0.1s;
+            font-family: "Microsoft JhengHei", sans-serif;
         }
 
         .btn-search:active {
@@ -270,6 +286,9 @@
             <i class="far fa-copy"></i> 複製清單
         </button>
     </div>
+
+    <!-- 簽名行 - 樣式已更新 -->
+    <div class="author-tag">by 1389 KupeR</div>
 
     <div class="search-area">
         <div class="label-text" style="margin-bottom:10px;"><i class="fas fa-search"></i> 查詢特定伺服器</div>
@@ -386,7 +405,8 @@
         const groupName = document.getElementById('groupName').innerText;
         const dateStr = document.getElementById('dateInput').value;
         
-        const textToCopy = `[閃亮任務小工具]\n\n今日的閃亮任務: ${servers}`;
+        // 修改了複製的文案
+        const textToCopy = `[閃亮任務小工具]\n重置日期: ${dateStr}\n今日閃亮清單:\n${servers}`;
 
         // 建立臨時 textarea 進行複製 (相容性較佳)
         const textArea = document.createElement("textarea");
