@@ -116,6 +116,9 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
             min-height: 200px; /* 防止載入時跳動 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .group-name {
@@ -131,6 +134,7 @@
             flex-wrap: wrap;
             justify-content: center;
             gap: 8px;
+            margin-bottom: 1.5rem;
         }
 
         .badge {
@@ -146,6 +150,31 @@
         .badge.highlight {
              background: var(--primary);
              box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+
+        /* 複製按鈕 */
+        .btn-copy {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text-sub);
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-copy:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-color: white;
+        }
+        
+        .btn-copy:active {
+            transform: scale(0.95);
         }
 
         /* 搜尋區 */
@@ -237,6 +266,9 @@
     <div class="result-card">
         <div id="groupName" class="group-name">計算中...</div>
         <div id="serverList" class="server-grid"></div>
+        <button id="copyBtn" class="btn-copy" onclick="copyList()">
+            <i class="far fa-copy"></i> 複製清單
+        </button>
     </div>
 
     <div class="search-area">
@@ -342,6 +374,45 @@
         } else {
             resultDiv.innerHTML = `<span style="color:var(--danger)"><i class="fas fa-times"></i> 找不到伺服器 ${serverNum}</span>`;
         }
+    }
+    
+    // 複製清單功能
+    function copyList() {
+        const list = document.getElementById('serverList');
+        if (!list || list.children.length === 0) return;
+
+        // 整理文字
+        const servers = Array.from(list.children).map(badge => badge.innerText).join(', ');
+        const groupName = document.getElementById('groupName').innerText;
+        const dateStr = document.getElementById('dateInput').value;
+        
+        const textToCopy = `[閃亮任務小工具]\n\n今日的閃亮任務: ${servers}`;
+
+        // 建立臨時 textarea 進行複製 (相容性較佳)
+        const textArea = document.createElement("textarea");
+        textArea.value = textToCopy;
+        document.body.appendChild(textArea);
+        textArea.select();
+        
+        try {
+            document.execCommand('copy');
+            // 按鈕回饋
+            const btn = document.getElementById('copyBtn');
+            const originalText = '<i class="far fa-copy"></i> 複製清單';
+            btn.innerHTML = '<i class="fas fa-check"></i> 已複製';
+            btn.style.borderColor = "var(--success)";
+            btn.style.color = "var(--success)";
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.borderColor = "rgba(255,255,255,0.2)";
+                btn.style.color = "var(--text-sub)";
+            }, 2000);
+        } catch (err) {
+            alert('複製失敗，請手動選取文字複製');
+        }
+        
+        document.body.removeChild(textArea);
     }
     
     // 綁定 Enter 鍵
