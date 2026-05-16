@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -228,9 +228,39 @@ function buildDataFile(result) {
 
 async function writeDataFile(result) {
   const outputPath = fileURLToPath(OUTPUT_URL);
+  const nextData = buildDataFile(result);
+  const existingData = await readExistingDataFile(outputPath);
+
+  if (existingData && hasSameShinyData(existingData, nextData)) {
+    console.log(`No data changes for ${outputPath}`);
+    return;
+  }
+
   await mkdir(dirname(outputPath), { recursive: true });
-  await writeFile(outputPath, `${JSON.stringify(buildDataFile(result), null, 2)}\n`, "utf8");
+  await writeFile(outputPath, `${JSON.stringify(nextData, null, 2)}\n`, "utf8");
   console.log(`Wrote ${outputPath}`);
+}
+
+async function readExistingDataFile(outputPath) {
+  try {
+    return JSON.parse(await readFile(outputPath, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function hasSameShinyData(currentData, nextData) {
+  return JSON.stringify(getComparableData(currentData)) === JSON.stringify(getComparableData(nextData));
+}
+
+function getComparableData(data) {
+  return {
+    source: data.source,
+    serverRange: data.serverRange,
+    groupAnchors: data.groupAnchors,
+    currentStatusByGroup: data.currentStatusByGroup,
+    groups: data.groups,
+  };
 }
 
 async function main() {
