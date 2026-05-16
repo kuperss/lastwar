@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
 const SOURCE_URL = "https://cpt-hedge.com/servers";
 const MIN_SERVER = 1381;
 const MAX_SERVER = 1444;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const OUTPUT_URL = new URL("../data/shiny-groups.json", import.meta.url);
 const SHINY_STATUSES = ["Today", "Tomorrow", "In 2 days"];
 const GROUP_ANCHORS = {
   1: 1381,
@@ -199,6 +204,35 @@ function printResult(result) {
   }
 }
 
+function buildDataFile(result) {
+  return {
+    source: SOURCE_URL,
+    updatedAt: new Date().toISOString(),
+    serverRange: {
+      min: MIN_SERVER,
+      max: MAX_SERVER,
+    },
+    groupAnchors: GROUP_ANCHORS,
+    currentStatusByGroup: Object.fromEntries(
+      Object.entries(result.numberedGroups).map(([groupNumber, group]) => {
+        return [groupNumber, group.currentStatus];
+      }),
+    ),
+    groups: Object.fromEntries(
+      Object.entries(result.numberedGroups).map(([groupNumber, group]) => {
+        return [groupNumber, group.servers];
+      }),
+    ),
+  };
+}
+
+async function writeDataFile(result) {
+  const outputPath = fileURLToPath(OUTPUT_URL);
+  await mkdir(dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, `${JSON.stringify(buildDataFile(result), null, 2)}\n`, "utf8");
+  console.log(`Wrote ${outputPath}`);
+}
+
 async function main() {
   const { servers, scriptUrl } = await loadServers();
   const result = {
@@ -207,6 +241,10 @@ async function main() {
   };
 
   printResult(result);
+
+  if (process.argv.includes("--write")) {
+    await writeDataFile(result);
+  }
 }
 
 main().catch((error) => {

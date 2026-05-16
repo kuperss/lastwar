@@ -302,11 +302,23 @@
 
 <script>
     // 1. 資料庫
-    const groups = {
-            1: [1381, 1388, 1389, 1390, 1397, 1398, 1399, 1405, 1406, 1407, 1408, 1421, 1422, 1423, 1436, 1437, 1438, 1444],
-        2: [1382, 1383, 1384, 1391, 1392, 1393, 1394, 1400, 1401, 1402, 1409, 1410, 1411, 1415, 1416, 1417, 1418, 1424, 1425, 1426, 1431, 1432, 1433, 1439],
-        3: [1385, 1386, 1387, 1395, 1396, 1403, 1404, 1412, 1413, 1414, 1419, 1420, 1427, 1428, 1429, 1434, 1435, 1440, 1441, 1442, 1443]
-    };
+    let groups = {};
+
+    async function loadShinyGroups() {
+        try {
+            const response = await fetch('./data/shiny-groups.json', { cache: 'no-store' });
+            if (!response.ok) throw new Error(`Failed to load groups: ${response.status}`);
+
+            const data = await response.json();
+            groups = data.groups;
+            return true;
+        } catch (error) {
+            console.error(error);
+            document.getElementById('groupName').innerText = '\u8cc7\u6599\u8f09\u5165\u5931\u6557';
+            document.getElementById('serverList').innerHTML = '';
+            return false;
+        }
+    }
 
     // 2. 邏輯校正區
     // 目標：12/13 必須是第二組
@@ -356,6 +368,8 @@
 
         const listContainer = document.getElementById('serverList');
         listContainer.innerHTML = '';
+        if (!groups[groupNum]) return;
+
         groups[groupNum].sort((a,b) => a-b).forEach(server => {
             const badge = document.createElement('div');
             badge.className = 'badge';
@@ -463,7 +477,9 @@
     }
 
     document.getElementById('dateInput').addEventListener('change', updateDisplay);
-    initDate();
+    loadShinyGroups().then((loaded) => {
+        if (loaded) initDate();
+    });
 
 </script>
 
