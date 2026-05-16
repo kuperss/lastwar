@@ -4,6 +4,12 @@ const SOURCE_URL = "https://cpt-hedge.com/servers";
 const MIN_SERVER = 1381;
 const MAX_SERVER = 1444;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const SHINY_STATUSES = ["Today", "Tomorrow", "In 2 days"];
+const GROUP_ANCHORS = {
+  1: 1381,
+  2: 1382,
+  3: 1385,
+};
 
 async function fetchText(url) {
   const response = await fetch(url, {
@@ -115,7 +121,7 @@ function sortNumbers(values) {
 
 function collectShinyTasks(servers, now = new Date()) {
   const byId = new Map(servers.map((server) => [Number(server.id), server]));
-  const groups = {
+  const statusGroups = {
     Today: [],
     Tomorrow: [],
     "In 2 days": [],
@@ -129,21 +135,49 @@ function collectShinyTasks(servers, now = new Date()) {
       continue;
     }
 
-    groups[getShinyTaskStatus(server, now)].push(id);
+    statusGroups[getShinyTaskStatus(server, now)].push(id);
   }
 
+  const sortedStatusGroups = {
+    Today: sortNumbers(statusGroups.Today),
+    Tomorrow: sortNumbers(statusGroups.Tomorrow),
+    "In 2 days": sortNumbers(statusGroups["In 2 days"]),
+  };
+
   return {
-    groups: {
-      Today: sortNumbers(groups.Today),
-      Tomorrow: sortNumbers(groups.Tomorrow),
-      "In 2 days": sortNumbers(groups["In 2 days"]),
-    },
+    statusGroups: sortedStatusGroups,
+    numberedGroups: buildNumberedGroups(sortedStatusGroups),
     missing,
   };
 }
 
+function buildNumberedGroups(statusGroups) {
+  const numberedGroups = {};
+  const usedStatuses = new Set();
+
+  for (const [groupNumber, anchorServer] of Object.entries(GROUP_ANCHORS)) {
+    const status = SHINY_STATUSES.find((label) => statusGroups[label].includes(anchorServer));
+
+    if (!status) {
+      throw new Error(`Anchor server #${anchorServer} for Group ${groupNumber} was not found.`);
+    }
+    if (usedStatuses.has(status)) {
+      throw new Error(`Duplicate status mapping detected for ${status}.`);
+    }
+
+    usedStatuses.add(status);
+    numberedGroups[groupNumber] = {
+      anchorServer,
+      currentStatus: status,
+      servers: statusGroups[status],
+    };
+  }
+
+  return numberedGroups;
+}
+
 function printResult(result) {
-  const foundCount = Object.values(result.groups).reduce((sum, values) => sum + values.length, 0);
+  const foundCount = Object.values(result.statusGroups).reduce((sum, values) => sum + values.length, 0);
 
   console.log(`Source: ${SOURCE_URL}`);
   console.log(`Data script: ${result.scriptUrl}`);
@@ -151,11 +185,16 @@ function printResult(result) {
   console.log(`Found in range: ${foundCount}`);
   console.log(`Missing in source: ${result.missing.length ? result.missing.join(", ") : "none"}`);
   console.log("");
+  console.log("Fixed group mapping:");
+  console.log("Group 1 anchor: #1381");
+  console.log("Group 2 anchor: #1382");
+  console.log("Group 3 anchor: #1385");
+  console.log("");
 
-  for (const label of ["Today", "Tomorrow", "In 2 days"]) {
-    const values = result.groups[label];
-    console.log(`${label} (${values.length}):`);
-    console.log(values.join(", "));
+  for (const groupNumber of ["1", "2", "3"]) {
+    const group = result.numberedGroups[groupNumber];
+    console.log(`Group ${groupNumber} (${group.servers.length}) - currently ${group.currentStatus}:`);
+    console.log(group.servers.join(", "));
     console.log("");
   }
 }
