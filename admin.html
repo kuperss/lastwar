@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>到訪統計 | Last War 戰略指揮中心</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #3b82f6;
+            --accent: #8b5cf6;
+            --gold: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", 'Roboto', sans-serif;
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 50% 0%, #2e1065 0%, var(--bg-dark) 60%);
+            color: var(--text-main);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            background-color: rgba(30, 41, 59, 0.9);
+            width: 90%;
+            max-width: 760px;
+            padding: 2rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 20px auto;
+            box-sizing: border-box;
+        }
+
+        header { text-align: center; margin-bottom: 2rem; }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.6rem;
+            margin: 0;
+            background: linear-gradient(135deg, #60a5fa, #c084fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
+
+        h2 { font-size: 0.9rem; color: var(--text-sub); margin-top: 0.5rem; font-weight: 400; }
+
+        /* 密碼關卡 */
+        .gate { display: flex; flex-direction: column; gap: 0.75rem; }
+
+        .gate input {
+            padding: 12px;
+            border-radius: 12px;
+            border: 2px solid #334155;
+            background: var(--bg-dark);
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .gate input:focus { border-color: var(--accent); }
+
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.5; cursor: default; }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text-sub);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: white; }
+        .btn-ghost.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* 數字卡 */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat {
+            background: linear-gradient(180deg, #2d3748 0%, #1a202c 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.1rem 1rem;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.9rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .stat-value.gold { color: var(--gold); }
+        .stat-value.blue { color: var(--primary); }
+        .stat-value.green { color: var(--success); }
+
+        /* 圖表 */
+        .panel {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .panel-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .panel-title { font-size: 0.9rem; color: var(--text-sub); font-weight: 500; }
+        .range-buttons { display: flex; gap: 6px; }
+
+        .chart {
+            position: relative;
+            height: 190px;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            padding-bottom: 1px;
+        }
+
+        .chart-max {
+            position: absolute;
+            top: -4px;
+            left: 0;
+            font-size: 0.75rem;
+            color: var(--text-sub);
+        }
+
+        .bar {
+            flex: 1;
+            min-width: 2px;
+            min-height: 2px;
+            background: linear-gradient(180deg, #60a5fa, #3b82f6);
+            border-radius: 3px 3px 0 0;
+            transition: background 0.15s;
+        }
+
+        .bar.empty { background: #334155; }
+        .bar.today { background: linear-gradient(180deg, #fbbf24, #f59e0b); }
+        .bar:hover { background: var(--accent); }
+
+        .chart-axis {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.72rem;
+            color: var(--text-sub);
+            margin-top: 6px;
+        }
+
+        /* 表格 */
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th, td { padding: 8px 10px; text-align: left; }
+        th { color: var(--text-sub); font-weight: 500; font-size: 0.8rem; border-bottom: 1px solid #334155; }
+        tbody tr:nth-child(even) { background: rgba(255,255,255,0.03); }
+        td:last-child, th:last-child { text-align: right; font-family: 'Orbitron', sans-serif; }
+
+        .msg { color: var(--text-sub); font-size: 0.9rem; text-align: center; padding: 1rem 0; }
+        .msg.error { color: var(--danger); }
+
+        .footer-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.4);
+            margin-top: 1rem;
+        }
+
+        .footer-row a { color: var(--text-sub); }
+
+        @media (max-width: 480px) {
+            .container { width: 95%; padding: 1.25rem; }
+            h1 { font-size: 1.3rem; }
+            .stat-value { font-size: 1.5rem; }
+            .chart { height: 150px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>到訪統計</h1>
+        <h2>閃亮隱祕任務速查工具</h2>
+    </header>
+
+    <!-- 密碼關卡 -->
+    <div id="gate" class="gate" style="display:none;">
+        <div class="panel">
+            <div class="panel-title" style="margin-bottom:10px;">
+                <i class="fas fa-lock"></i> 請輸入管理密碼
+            </div>
+            <input type="password" id="keyInput" placeholder="ADMIN_KEY" autocomplete="current-password">
+            <div id="gateError" class="msg error" style="display:none;"></div>
+        </div>
+        <button class="btn" id="unlockBtn">解鎖</button>
+    </div>
+
+    <!-- 統計內容 -->
+    <div id="dashboard" style="display:none;">
+        <div class="stat-grid">
+            <div class="stat">
+                <div class="stat-label"><i class="far fa-calendar-check"></i> 今日到訪</div>
+                <div class="stat-value gold" id="statToday">–</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label"><i class="fas fa-users"></i> 累計到訪</div>
+                <div class="stat-value blue" id="statTotal">–</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label"><i class="fas fa-chart-line"></i> 平均每日</div>
+                <div class="stat-value green" id="statAverage">–</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <div class="panel-title">每日不重複到訪人數</div>
+                <div class="range-buttons" id="rangeButtons">
+                    <button class="btn-ghost" data-days="7">7 天</button>
+                    <button class="btn-ghost" data-days="30">30 天</button>
+                    <button class="btn-ghost active" data-days="60">60 天</button>
+                </div>
+            </div>
+            <div class="chart" id="chart">
+                <div class="chart-max" id="chartMax"></div>
+            </div>
+            <div class="chart-axis">
+                <span id="axisStart"></span>
+                <span id="axisEnd"></span>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <div class="panel-title">最近 14 天明細</div>
+            </div>
+            <table>
+                <thead><tr><th>日期</th><th>到訪人數</th></tr></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="footer-row">
+            <span id="footerNote"></span>
+            <button class="btn-ghost" id="logoutBtn">登出</button>
+        </div>
+    </div>
+
+    <div id="loading" class="msg">載入中…</div>
+</div>
+
+<script>
+    // ⬇⬇⬇ 部署完 Worker 之後，把網址填在這裡（結尾不要斜線） ⬇⬇⬇
+    const ANALYTICS_ENDPOINT = 'https://lastwar-stats.jancheng-online-exam-system.workers.dev';
+
+    const STORAGE_KEY = 'lastwar-admin-key';
+    let currentDays = 60;
+
+    const $ = (id) => document.getElementById(id);
+
+    function show(id, visible, display = 'block') {
+        $(id).style.display = visible ? display : 'none';
+    }
+
+    function showGate(message) {
+        show('loading', false);
+        show('dashboard', false);
+        show('gate', true, 'flex');
+        if (message) {
+            $('gateError').innerText = message;
+            show('gateError', true);
+        }
+        $('keyInput').focus();
+    }
+
+    function showError(message) {
+        show('loading', true);
+        $('loading').innerText = message;
+        $('loading').classList.add('error');
+    }
+
+    async function fetchStats(key, days) {
+        const response = await fetch(`${ANALYTICS_ENDPOINT}/stats?days=${days}`, {
+            headers: { Authorization: `Bearer ${key}` },
+            cache: 'no-store',
+        });
+
+        if (response.status === 401) throw Object.assign(new Error('密碼錯誤'), { unauthorized: true });
+        if (!response.ok) throw new Error(`讀取失敗 (${response.status})`);
+
+        return response.json();
+    }
+
+    function renderChart(series, today) {
+        const chart = $('chart');
+        const max = Math.max(1, ...series.map((point) => point.visitors));
+
+        chart.innerHTML = '<div class="chart-max" id="chartMax"></div>';
+        $('chartMax').innerText = `最高 ${max}`;
+
+        for (const point of series) {
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            if (point.visitors === 0) bar.classList.add('empty');
+            if (point.day === today) bar.classList.add('today');
+            bar.style.height = `${Math.max(2, Math.round((point.visitors / max) * 100))}%`;
+            bar.title = `${point.day}　${point.visitors} 人`;
+            chart.appendChild(bar);
+        }
+
+        $('axisStart').innerText = series[0]?.day ?? '';
+        $('axisEnd').innerText = series[series.length - 1]?.day ?? '';
+    }
+
+    function renderTable(series) {
+        const rows = series.slice(-14).reverse();
+        $('tableBody').innerHTML = rows
+            .map((point) => `<tr><td>${point.day}</td><td>${point.visitors}</td></tr>`)
+            .join('');
+    }
+
+    function render(data) {
+        $('statToday').innerText = data.todayVisitors.toLocaleString();
+        $('statTotal').innerText = data.totalVisitors.toLocaleString();
+
+        const average = data.activeDays > 0 ? data.totalVisitors / data.activeDays : 0;
+        $('statAverage').innerText = average.toFixed(average >= 10 ? 0 : 1);
+
+        renderChart(data.series, data.today);
+        renderTable(data.series);
+
+        $('footerNote').innerText = data.firstDay
+            ? `統計自 ${data.firstDay} 起，共 ${data.activeDays} 天有人到訪`
+            : '目前還沒有資料';
+
+        show('loading', false);
+        show('gate', false);
+        show('dashboard', true);
+    }
+
+    async function load(key, days) {
+        try {
+            render(await fetchStats(key, days));
+        } catch (error) {
+            if (error.unauthorized) {
+                localStorage.removeItem(STORAGE_KEY);
+                showGate('密碼錯誤，請重新輸入');
+                return;
+            }
+            console.error(error);
+            showError(error.message);
+        }
+    }
+
+    $('unlockBtn').addEventListener('click', async () => {
+        const key = $('keyInput').value.trim();
+        if (!key) return;
+
+        localStorage.setItem(STORAGE_KEY, key);
+        show('gate', false);
+        show('loading', true);
+        $('loading').innerText = '載入中…';
+        await load(key, currentDays);
+    });
+
+    $('keyInput').addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') $('unlockBtn').click();
+    });
+
+    $('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem(STORAGE_KEY);
+        $('keyInput').value = '';
+        showGate();
+    });
+
+    $('rangeButtons').addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-days]');
+        if (!button) return;
+
+        for (const other of $('rangeButtons').children) other.classList.remove('active');
+        button.classList.add('active');
+
+        currentDays = Number(button.dataset.days);
+        await load(localStorage.getItem(STORAGE_KEY), currentDays);
+    });
+
+    (function init() {
+        if (!ANALYTICS_ENDPOINT) {
+            showError('尚未設定 ANALYTICS_ENDPOINT，請看 analytics/README.md');
+            return;
+        }
+
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) {
+            showGate();
+            return;
+        }
+
+        load(saved, currentDays);
+    })();
+</script>
+
+</body>
+</html>

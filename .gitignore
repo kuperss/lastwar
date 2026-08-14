@@ -1,0 +1,5 @@
+node_modules/
+
+# Worker 的本機密鑰與本機 D1 資料，不要進版控
+analytics/.dev.vars
+.wrangler/

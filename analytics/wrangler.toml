@@ -1,0 +1,20 @@
+name = "lastwar-stats"
+main = "src/worker.js"
+compatibility_date = "2026-08-01"
+
+# 只要正式網址一個對外入口就夠，不需要每個版本再多開一組預覽網址
+preview_urls = false
+
+# 只允許這些來源呼叫 /hit，避免有人直接打 API 灌數字。
+# 本機測試時把 http://127.0.0.1:8791 一起留著即可。
+[vars]
+ALLOWED_ORIGINS = "https://kuperss.github.io,http://127.0.0.1:8791,http://localhost:8791"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "lastwar-stats"
+database_id = "f4ad8a2b-8d98-417e-9af8-7c04b6140fe4"
+
+# 每天台灣時間 02:30 清掉過期的去重雜湊
+[triggers]
+crons = ["30 18 * * *"]

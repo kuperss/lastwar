@@ -302,7 +302,58 @@
 
 <script>
     // 1. 資料庫
+    // data/shiny-groups.json 是唯一真相來源：它同時給出分組名單，以及
+    // 「產生當下哪一組輪到 Today」這個錨點，所有日期推算都從這裡展開。
+    // 前端不再自己寫死基準日；週期若真的變動，重跑 scripts/read-shiny-tasks.mjs 就會跟上。
     let groups = {};
+    let anchorDayNumber = null;  // 錨點落在第幾個重置日
+    let cycleGroups = null;      // [錨點日的組號, 隔天的組號, 後天的組號]
+
+    // 重置時間固定是台灣時間 10:00，也就是 UTC 02:00（台灣不實施日光節約時間）
+    const RESET_HOUR_UTC = 2;
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const STATUS_OFFSET = { 'Today': 0, 'Tomorrow': 1, 'In 2 days': 2 };
+
+    // 一律用 UTC 換算「第幾天」，使用者在哪個時區都會得到同一個答案
+    function dayNumberFromUTC(year, monthIndex, day) {
+        return Math.floor(Date.UTC(year, monthIndex, day) / DAY_MS);
+    }
+
+    // 某個瞬間落在哪一個重置日
+    function resetDayNumber(instant) {
+        const shifted = new Date(instant.getTime() - RESET_HOUR_UTC * 60 * 60 * 1000);
+        return dayNumberFromUTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate());
+    }
+
+    // 'YYYY-MM-DD' 直接當成重置日，不走 Date 字串解析（那會被本地時區拉走一天）
+    function dayNumberFromInput(value) {
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+        if (!match) return null;
+        return dayNumberFromUTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+
+    function dayNumberToInput(dayNumber) {
+        const date = new Date(dayNumber * DAY_MS);
+        const yyyy = date.getUTCFullYear();
+        const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const dd = String(date.getUTCDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // 由 currentStatusByGroup 反推三天的輪替順序，連順序都不寫死在前端
+    function buildCycleGroups(data) {
+        const entries = Object.entries(data.currentStatusByGroup || {});
+        if (entries.length !== 3) return null;
+
+        const cycle = [null, null, null];
+        for (const [groupNumber, status] of entries) {
+            const offset = STATUS_OFFSET[status];
+            if (offset === undefined || cycle[offset] !== null) return null;
+            cycle[offset] = Number(groupNumber);
+        }
+
+        return cycle.every((groupNumber) => Number.isInteger(groupNumber)) ? cycle : null;
+    }
 
     async function loadShinyGroups() {
         try {
@@ -310,46 +361,40 @@
             if (!response.ok) throw new Error(`Failed to load groups: ${response.status}`);
 
             const data = await response.json();
+            const cycle = buildCycleGroups(data);
+            const updatedAt = new Date(data.updatedAt);
+
+            // 資料檔壞掉就明講，不要靜靜地用錯誤的基準一路算下去
+            if (!data.groups || !cycle || Number.isNaN(updatedAt.getTime())) {
+                throw new Error('shiny-groups.json 缺少 groups / currentStatusByGroup / updatedAt');
+            }
+
             groups = data.groups;
+            cycleGroups = cycle;
+            anchorDayNumber = resetDayNumber(updatedAt);
             return true;
         } catch (error) {
             console.error(error);
-            document.getElementById('groupName').innerText = '\u8cc7\u6599\u8f09\u5165\u5931\u6557';
+            document.getElementById('groupName').innerText = '資料載入失敗';
             document.getElementById('serverList').innerHTML = '';
             return false;
         }
     }
 
-    // 2. 邏輯校正區
-    // 目標：12/13 必須是第二組
-    // 推算：如果 12/13 是 Group 2，那麼 12/12 必須是 Group 1。
-    // 設定基準日為 12/12 (Group 1)
-    const baseDate = new Date('2025-12-12T00:00:00');
-
-    function getGroupForDate(inputDate) {
-        const targetDate = new Date(inputDate);
-        targetDate.setHours(0, 0, 0, 0); 
-        
-        const diffTime = targetDate - baseDate;
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        
-        // 數學邏輯：
-        // 12/12 (diff 0) -> 餘數 0 -> 對應 Group 1
-        // 12/13 (diff 1) -> 餘數 1 -> 對應 Group 2
-        // 12/14 (diff 2) -> 餘數 2 -> 對應 Group 3
-        
-        let cycleIndex = (diffDays % 3 + 3) % 3; // +3防止負數
-
-        if (cycleIndex === 0) return 1;
-        if (cycleIndex === 1) return 2;
-        if (cycleIndex === 2) return 3;
+    // 2. 從錨點推算任一天的組別
+    function getGroupForDayNumber(dayNumber) {
+        const offset = (((dayNumber - anchorDayNumber) % 3) + 3) % 3; // +3 防止負數
+        return cycleGroups[offset];
     }
 
     function updateDisplay() {
-        const dateInput = document.getElementById('dateInput').value;
-        if (!dateInput) return;
+        const dateValue = document.getElementById('dateInput').value;
+        if (!dateValue || cycleGroups === null) return;
 
-        const groupNum = getGroupForDate(new Date(dateInput));
+        const dayNumber = dayNumberFromInput(dateValue);
+        if (dayNumber === null) return;
+
+        const groupNum = getGroupForDayNumber(dayNumber);
         
         const groupTitles = {
             1: "第一組 (Group 1)",
@@ -410,43 +455,67 @@
     }
     
     // 複製清單功能
-    function copyList() {
+    async function copyList() {
         const list = document.getElementById('serverList');
         if (!list || list.children.length === 0) return;
 
         // 整理文字
         const servers = Array.from(list.children).map(badge => badge.innerText).join(', ');
-        const groupName = document.getElementById('groupName').innerText;
         const dateStr = document.getElementById('dateInput').value;
-        
-        // 修改了複製的文案
+
         const textToCopy = `[閃亮任務小工具]\n重置日期: ${dateStr}\n今日閃亮清單:\n${servers}`;
 
-        // 建立臨時 textarea 進行複製 (相容性較佳)
-        const textArea = document.createElement("textarea");
-        textArea.value = textToCopy;
-        document.body.appendChild(textArea);
-        textArea.select();
-        
-        try {
-            document.execCommand('copy');
-            // 按鈕回饋
-            const btn = document.getElementById('copyBtn');
-            const originalText = '<i class="far fa-copy"></i> 複製清單';
-            btn.innerHTML = '<i class="fas fa-check"></i> 已複製';
-            btn.style.borderColor = "var(--success)";
-            btn.style.color = "var(--success)";
-            
-            setTimeout(() => {
-                btn.innerHTML = originalText;
-                btn.style.borderColor = "rgba(255,255,255,0.2)";
-                btn.style.color = "var(--text-sub)";
-            }, 2000);
-        } catch (err) {
+        if (await writeToClipboard(textToCopy)) {
+            showCopied();
+        } else {
             alert('複製失敗，請手動選取文字複製');
         }
-        
+    }
+
+    async function writeToClipboard(text) {
+        // 本站走 HTTPS，優先用標準 API：手機（尤其 iOS Safari）成功率高很多
+        if (navigator.clipboard && window.isSecureContext) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (error) {
+                console.warn('Clipboard API 失敗，改用 execCommand', error);
+            }
+        }
+
+        // 舊瀏覽器 / 非安全內容的退路
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.setAttribute('readonly', '');
+        textArea.style.position = 'fixed';
+        textArea.style.top = '0';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        textArea.setSelectionRange(0, text.length); // iOS 要有這行才選得到
+
+        let copied = false;
+        try {
+            copied = document.execCommand('copy');
+        } catch (error) {
+            console.warn('execCommand 複製失敗', error);
+        }
         document.body.removeChild(textArea);
+        return copied;
+    }
+
+    function showCopied() {
+        const btn = document.getElementById('copyBtn');
+        const originalText = '<i class="far fa-copy"></i> 複製清單';
+        btn.innerHTML = '<i class="fas fa-check"></i> 已複製';
+        btn.style.borderColor = "var(--success)";
+        btn.style.color = "var(--success)";
+
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.borderColor = "rgba(255,255,255,0.2)";
+            btn.style.color = "var(--text-sub)";
+        }, 2000);
     }
     
     // 綁定 Enter 鍵
@@ -455,31 +524,29 @@
     });
 
     function initDate() {
-        const now = new Date();
-        
-        // 台灣時間轉換 (UTC+8)
-        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-        const taiwanTime = new Date(utc + (3600000 * 8));
-
-        const currentHour = taiwanTime.getHours();
-
-        // 10點前算前一天
-        if (currentHour < 10) {
-            taiwanTime.setDate(taiwanTime.getDate() - 1);
-        }
-
-        const yyyy = taiwanTime.getFullYear();
-        const mm = String(taiwanTime.getMonth() + 1).padStart(2, '0');
-        const dd = String(taiwanTime.getDate()).padStart(2, '0');
-        
-        document.getElementById('dateInput').value = `${yyyy}-${mm}-${dd}`;
+        // 重置日 = (現在時間 - 2 小時) 的 UTC 日期，等同台灣時間 10:00 換日。
+        // 這樣算不必碰使用者裝置的時區，也就不會有跨日誤差。
+        document.getElementById('dateInput').value = dayNumberToInput(resetDayNumber(new Date()));
         updateDisplay();
+    }
+
+    // 3. 到訪統計（可留空停用；設定方式見 analytics/README.md）
+    const ANALYTICS_ENDPOINT = 'https://lastwar-stats.jancheng-online-exam-system.workers.dev';
+
+    function recordVisit() {
+        if (!ANALYTICS_ENDPOINT) return;
+
+        // keepalive：使用者查完馬上關掉分頁也送得出去。
+        // 統計掛掉不能影響查詢功能，所以錯誤一律吞掉。
+        fetch(`${ANALYTICS_ENDPOINT}/hit`, { method: 'POST', mode: 'cors', keepalive: true })
+            .catch(() => {});
     }
 
     document.getElementById('dateInput').addEventListener('change', updateDisplay);
     loadShinyGroups().then((loaded) => {
         if (loaded) initDate();
     });
+    recordVisit();
 
 </script>
 
