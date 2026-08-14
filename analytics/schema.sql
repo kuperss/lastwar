@@ -12,3 +12,15 @@ CREATE TABLE IF NOT EXISTS visitor_seen (
 );
 
 CREATE INDEX IF NOT EXISTS idx_visitor_seen_day ON visitor_seen (day);
+
+-- 每日各地區的不重複到訪人數。國家與城市由 Cloudflare 邊緣節點判定（request.cf），
+-- 不需要查任何資料庫，也不會因此存下 IP。
+CREATE TABLE IF NOT EXISTS daily_locations (
+  day      TEXT NOT NULL,
+  country  TEXT NOT NULL,          -- ISO 兩碼，判定不出來時是 'XX'
+  city     TEXT NOT NULL,          -- 判定不出來時是空字串
+  visitors INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, country, city)
+);
+
+CREATE INDEX IF NOT EXISTS idx_daily_locations_day ON daily_locations (day);

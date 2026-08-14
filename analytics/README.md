@@ -18,6 +18,14 @@ GitHub Pages 是純靜態空間，沒有辦法自己數人頭，所以計數放�
 - 雜湊只留 7 天，每天台灣時間 02:30 由 cron 自動清掉
 - 每日人數彙總後永久保留（`daily_visits` 表）
 
+同時記錄**國家與城市**（`daily_locations` 表）。這兩個值直接來自 `request.cf`，
+是 Cloudflare 邊緣節點附在請求上的，不需要查任何資料庫，也不會因此存下 IP。
+判定不出來時國家記成 `XX`、城市記成空字串。
+
+> ⚠️ 城市層級在使用者很少的時候，「某城市 1 人」幾乎等於指認到個人。
+> 這是刻意選擇的取捨；只想要國家的話，把 worker 裡寫入 `daily_locations` 的
+> `city` 固定成空字串即可，其他都不用動。
+
 ## 部署步驟
 
 需要一個 Cloudflare 免費帳號。以下指令都在 `analytics/` 資料夾裡跑。
@@ -118,11 +126,33 @@ ADMIN_KEY=local-test-key
   "totalVisitors": 1043,
   "activeDays": 96,
   "firstDay": "2026-05-11",
-  "series": [{ "day": "2026-06-17", "visitors": 8 }]
+  "series": [{ "day": "2026-06-17", "visitors": 8 }],
+  "countries": [
+    {
+      "country": "TW",
+      "visitors": 28,
+      "cities": [{ "city": "Taipei", "visitors": 14 }]
+    }
+  ]
 }
 ```
 
 `series` 會把沒人來的日子補成 0，後台畫圖才不會斷線。
+
+`countries` **只涵蓋這次查詢的 `days` 區間**，所以它的總和跟 `totalVisitors`（全期間）
+不會相等。後台的「來源地區」面板標了「最近 N 天」就是這個意思。
+
+國家代碼在後台是用瀏覽器內建的 `Intl.DisplayNames` 轉成中文國名，沒有維護任何對照表。
+
+## 改了 schema 之後
+
+`schema.sql` 全部是 `CREATE TABLE IF NOT EXISTS`，直接重跑就是安全的遷移：
+
+```bash
+npx wrangler d1 execute lastwar-stats --remote --file=schema.sql
+```
+
+新欄位只會從執行的那一刻開始有資料，**既有的舊資料補不回來**。
 
 ## 費用
 

@@ -91,15 +91,46 @@ async function handleHit(request, env) {
   const isNewVisitor = inserted.meta.changes > 0;
 
   if (isNewVisitor) {
-    await env.DB.prepare(
-      `INSERT INTO daily_visits (day, visitors) VALUES (?, 1)
-       ON CONFLICT(day) DO UPDATE SET visitors = visitors + 1`,
-    )
-      .bind(day)
-      .run();
+    // request.cf 由 Cloudflare 邊緣節點附上，不必查任何資料庫，也不會存下 IP
+    const cf = request.cf ?? {};
+    const country = typeof cf.country === "string" && cf.country ? cf.country : "XX";
+    const city = typeof cf.city === "string" && cf.city ? cf.city : "";
+
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO daily_visits (day, visitors) VALUES (?, 1)
+         ON CONFLICT(day) DO UPDATE SET visitors = visitors + 1`,
+      ).bind(day),
+      env.DB.prepare(
+        `INSERT INTO daily_locations (day, country, city, visitors) VALUES (?, ?, ?, 1)
+         ON CONFLICT(day, country, city) DO UPDATE SET visitors = visitors + 1`,
+      ).bind(day, country, city),
+    ]);
   }
 
   return json({ ok: true, counted: isNewVisitor }, request, env);
+}
+
+// 把 (國家, 城市, 人數) 的扁平列表整理成國家底下掛城市，兩層都由多到少排序
+function buildLocationTree(rows) {
+  const byCountry = new Map();
+
+  for (const row of rows) {
+    if (!byCountry.has(row.country)) {
+      byCountry.set(row.country, { country: row.country, visitors: 0, cities: [] });
+    }
+
+    const entry = byCountry.get(row.country);
+    entry.visitors += row.visitors;
+    entry.cities.push({ city: row.city, visitors: row.visitors });
+  }
+
+  const countries = [...byCountry.values()].sort((a, b) => b.visitors - a.visitors);
+  for (const entry of countries) {
+    entry.cities.sort((a, b) => b.visitors - a.visitors);
+  }
+
+  return countries;
 }
 
 async function handleStats(request, env) {
@@ -121,7 +152,7 @@ async function handleStats(request, env) {
   const today = taipeiDay(new Date());
   const since = shiftDay(today, -(days - 1));
 
-  const [recent, totals] = await env.DB.batch([
+  const [recent, totals, locations] = await env.DB.batch([
     env.DB.prepare(
       "SELECT day, visitors FROM daily_visits WHERE day >= ? ORDER BY day ASC",
     ).bind(since),
@@ -131,6 +162,12 @@ async function handleStats(request, env) {
               MIN(day)                   AS firstDay
        FROM daily_visits`,
     ),
+    env.DB.prepare(
+      `SELECT country, city, SUM(visitors) AS visitors
+       FROM daily_locations
+       WHERE day >= ?
+       GROUP BY country, city`,
+    ).bind(since),
   ]);
 
   const byDay = new Map(recent.results.map((row) => [row.day, row.visitors]));
@@ -152,6 +189,8 @@ async function handleStats(request, env) {
       activeDays: summary.activeDays,
       firstDay: summary.firstDay,
       series,
+      // 只涵蓋這次查詢的天數區間，跟 totalVisitors（全期間）不會相等
+      countries: buildLocationTree(locations.results),
     },
     request,
     env,

@@ -202,6 +202,50 @@
             margin-top: 6px;
         }
 
+        /* 來源地區 */
+        .loc-list { display: flex; flex-direction: column; gap: 14px; }
+
+        .loc-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.92rem;
+        }
+
+        .loc-flag { font-size: 1.15rem; width: 1.7rem; text-align: center; }
+        .loc-name { flex: 1; }
+        .loc-count { font-family: 'Orbitron', sans-serif; font-weight: 700; }
+
+        .loc-track {
+            margin: 5px 0 0 1.7rem;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.06);
+            overflow: hidden;
+        }
+
+        .loc-bar {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #60a5fa, #3b82f6);
+        }
+
+        .loc-cities {
+            margin: 7px 0 0 1.7rem;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .loc-city {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            color: var(--text-sub);
+        }
+
+        .loc-city span:last-child { font-family: 'Orbitron', sans-serif; }
+
         /* 表格 */
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         th, td { padding: 8px 10px; text-align: left; }
@@ -288,6 +332,14 @@
 
         <div class="panel">
             <div class="panel-head">
+                <div class="panel-title">來源地區</div>
+                <div class="panel-title" id="locRange" style="font-size:0.78rem;"></div>
+            </div>
+            <div class="loc-list" id="locList"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
                 <div class="panel-title">最近 14 天明細</div>
             </div>
             <table>
@@ -368,6 +420,62 @@
         $('axisEnd').innerText = series[series.length - 1]?.day ?? '';
     }
 
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+        })[ch]);
+    }
+
+    // ISO 兩碼 → 國旗 emoji（把字母換成 Regional Indicator 符號）
+    function flagEmoji(code) {
+        // XX = 判定不出來，T1 = Tor 出口節點，都沒有對應的國旗
+        if (code === 'XX' || !/^[A-Z]{2}$/.test(code)) return '🏳️';
+        return String.fromCodePoint(...[...code].map((ch) => 0x1F1E6 + ch.charCodeAt(0) - 65));
+    }
+
+    // 瀏覽器內建的 Intl 就能把 TW 翻成「台灣」，不需要自己維護對照表
+    let regionNames = null;
+    function countryName(code) {
+        if (code === 'XX') return '未知地區';
+        try {
+            regionNames = regionNames || new Intl.DisplayNames(['zh-TW'], { type: 'region' });
+            return regionNames.of(code) || code;
+        } catch (error) {
+            return code;
+        }
+    }
+
+    function renderLocations(countries, days) {
+        const list = $('locList');
+        $('locRange').innerText = `最近 ${days} 天`;
+
+        if (!countries || countries.length === 0) {
+            list.innerHTML = '<div class="msg">還沒有資料</div>';
+            return;
+        }
+
+        const max = Math.max(...countries.map((entry) => entry.visitors));
+
+        list.innerHTML = countries.map((entry) => {
+            const cities = entry.cities.map((item) => {
+                const name = item.city ? escapeHtml(item.city) : '（未知城市）';
+                return `<div class="loc-city"><span>${name}</span><span>${item.visitors}</span></div>`;
+            }).join('');
+
+            const width = Math.max(3, Math.round((entry.visitors / max) * 100));
+
+            return `<div>
+                <div class="loc-row">
+                    <span class="loc-flag">${flagEmoji(entry.country)}</span>
+                    <span class="loc-name">${escapeHtml(countryName(entry.country))}</span>
+                    <span class="loc-count">${entry.visitors}</span>
+                </div>
+                <div class="loc-track"><div class="loc-bar" style="width:${width}%"></div></div>
+                <div class="loc-cities">${cities}</div>
+            </div>`;
+        }).join('');
+    }
+
     function renderTable(series) {
         const rows = series.slice(-14).reverse();
         $('tableBody').innerHTML = rows
@@ -383,6 +491,7 @@
         $('statAverage').innerText = average.toFixed(average >= 10 ? 0 : 1);
 
         renderChart(data.series, data.today);
+        renderLocations(data.countries, currentDays);
         renderTable(data.series);
 
         $('footerNote').innerText = data.firstDay
