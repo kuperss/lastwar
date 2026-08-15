@@ -1,0 +1,588 @@
+<!-- ⚠️ 這個檔案是產生出來的，不要手動編輯 ⚠️ -->
+<!-- 要改內容：templates/index.template.html（共用程式碼）或 variants.json（各版本的文字） -->
+<!-- 改完跑 build-variants.bat 重新產生 -->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Last War 戰略指揮中心</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #3b82f6;   /* 科技藍 */
+            --accent: #8b5cf6;    /* 紫色 */
+            --gold: #f59e0b;      /* 金色 */
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+        }
+
+        body {
+            /* 修改重點：將 "Microsoft JhengHei" 移到第一順位 */
+            font-family: "Microsoft JhengHei", 'Roboto', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            /* 背景裝飾 */
+            background-image: radial-gradient(circle at 50% 0%, #2e1065 0%, var(--bg-dark) 60%);
+        }
+
+        .container {
+            background-color: rgba(30, 41, 59, 0.9);
+            width: 90%;
+            max-width: 500px; /* 電腦版最大寬度 */
+            padding: 2rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 20px auto;
+            box-sizing: border-box; /* 確保 padding 不會撐大寬度 */
+        }
+
+        /* 標題區域 */
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif; /* 標題保留科技感英文字體，中文會自動吃到正黑體 */
+            font-size: 1.8rem;
+            margin: 0;
+            background: linear-gradient(135deg, #60a5fa, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
+
+        h2 {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            margin-top: 0.5rem;
+            font-weight: 400;
+        }
+
+        /* 日期選擇器 */
+        .control-group {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .label-text {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        input[type="date"] {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-dark);
+            border: 2px solid #334155;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            font-family: "Microsoft JhengHei", sans-serif; /* 確保輸入框也用正黑體 */
+            box-sizing: border-box; /* 防止超出容器 */
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="date"]:focus {
+            border-color: var(--primary);
+        }
+
+        /* 結果顯示區 */
+        .result-card {
+            background: linear-gradient(180deg, #2d3748 0%, #1a202c 100%);
+            border-radius: 20px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+            min-height: 200px; /* 防止載入時跳動 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .group-name {
+            font-family: 'Orbitron', sans-serif; /* 保留英文數字的科技感 */
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        .server-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 1.5rem;
+        }
+
+        .badge {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .badge.highlight {
+             background: var(--primary);
+             box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+
+        /* 複製按鈕 */
+        .btn-copy {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text-sub);
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: "Microsoft JhengHei", sans-serif;
+        }
+        
+        .btn-copy:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-color: white;
+        }
+        
+        .btn-copy:active {
+            transform: scale(0.95);
+        }
+
+        /* 作者簽名樣式 - 修改重點 */
+        .author-tag {
+            text-align: right; /* 修改為靠右對齊 */
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 10px;
+            margin-bottom: 5px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            padding-right: 5px; /* 增加一點右側間距，視覺上比較平衡 */
+        }
+
+        /* 搜尋區 */
+        .search-area {
+            margin-top: 1.5rem;
+            border-top: 1px solid #334155;
+            padding-top: 1.5rem;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="number"] {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            border: 2px solid #334155;
+            background: var(--bg-dark);
+            color: white;
+            font-size: 1rem;
+            text-align: center;
+            outline: none;
+            font-family: "Microsoft JhengHei", sans-serif;
+        }
+        
+        input[type="number"]:focus {
+            border-color: var(--accent);
+        }
+
+        .btn-search {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+            font-family: "Microsoft JhengHei", sans-serif;
+        }
+
+        .btn-search:active {
+            transform: scale(0.95);
+        }
+
+        #searchResult {
+            margin-top: 1rem;
+            font-size: 0.95rem;
+            min-height: 1.5rem;
+            font-weight: 500;
+        }
+
+        /* ========== 手機版 RWD 調整 ========== */
+        @media (max-width: 480px) {
+            .container {
+                width: 95%; /* 手機上更寬一點 */
+                padding: 1.5rem;
+                margin: 10px auto;
+            }
+
+            h1 {
+                font-size: 1.5rem; /* 標題縮小 */
+            }
+
+            .group-name {
+                font-size: 1.5rem; /* 組別名稱縮小 */
+            }
+            
+            .badge {
+                font-size: 0.9rem; /* 數字稍微縮小以容納更多 */
+                padding: 6px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>閃亮隱祕任務速查工具</h1>
+        <h2>專屬於KT 的每位小夥伴</h2>
+    </header>
+
+    <div class="control-group">
+        <div class="label-text"><i class="far fa-calendar-alt"></i> 選擇日期 (以重置日期為基準 10:00 AM)</div>
+        <input type="date" id="dateInput">
+    </div>
+
+    <div class="result-card">
+        <div id="groupName" class="group-name">計算中...</div>
+        <div id="serverList" class="server-grid"></div>
+        <button id="copyBtn" class="btn-copy" onclick="copyList()">
+            <i class="far fa-copy"></i> 複製清單
+        </button>
+    </div>
+
+    <!-- 簽名行 - 樣式已更新 -->
+    <div class="author-tag">by 1394 KupeR</div>
+
+    <div class="search-area">
+        <div class="label-text" style="margin-bottom:10px;"><i class="fas fa-search"></i> 查詢特定伺服器</div>
+        <div class="input-row">
+            <input type="number" id="serverSearch" placeholder="輸入號碼 (如 1381)">
+            <button class="btn-search" onclick="checkServer()">查詢</button>
+        </div>
+        <div id="searchResult"></div>
+    </div>
+</div>
+
+<script>
+    // 1. 資料庫
+    // data/shiny-groups.json 是唯一真相來源：它同時給出分組名單，以及
+    // 「產生當下哪一組輪到 Today」這個錨點，所有日期推算都從這裡展開。
+    // 前端不再自己寫死基準日；週期若真的變動，重跑 scripts/read-shiny-tasks.mjs 就會跟上。
+    let groups = {};
+    let anchorDayNumber = null;  // 錨點落在第幾個重置日
+    let cycleGroups = null;      // [錨點日的組號, 隔天的組號, 後天的組號]
+
+    // 重置時間固定是台灣時間 10:00，也就是 UTC 02:00（台灣不實施日光節約時間）
+    const RESET_HOUR_UTC = 2;
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const STATUS_OFFSET = { 'Today': 0, 'Tomorrow': 1, 'In 2 days': 2 };
+
+    // 一律用 UTC 換算「第幾天」，使用者在哪個時區都會得到同一個答案
+    function dayNumberFromUTC(year, monthIndex, day) {
+        return Math.floor(Date.UTC(year, monthIndex, day) / DAY_MS);
+    }
+
+    // 某個瞬間落在哪一個重置日
+    function resetDayNumber(instant) {
+        const shifted = new Date(instant.getTime() - RESET_HOUR_UTC * 60 * 60 * 1000);
+        return dayNumberFromUTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate());
+    }
+
+    // 'YYYY-MM-DD' 直接當成重置日，不走 Date 字串解析（那會被本地時區拉走一天）
+    function dayNumberFromInput(value) {
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+        if (!match) return null;
+        return dayNumberFromUTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+
+    function dayNumberToInput(dayNumber) {
+        const date = new Date(dayNumber * DAY_MS);
+        const yyyy = date.getUTCFullYear();
+        const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const dd = String(date.getUTCDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // 由 currentStatusByGroup 反推三天的輪替順序，連順序都不寫死在前端
+    function buildCycleGroups(data) {
+        const entries = Object.entries(data.currentStatusByGroup || {});
+        if (entries.length !== 3) return null;
+
+        const cycle = [null, null, null];
+        for (const [groupNumber, status] of entries) {
+            const offset = STATUS_OFFSET[status];
+            if (offset === undefined || cycle[offset] !== null) return null;
+            cycle[offset] = Number(groupNumber);
+        }
+
+        return cycle.every((groupNumber) => Number.isInteger(groupNumber)) ? cycle : null;
+    }
+
+    async function loadShinyGroups() {
+        try {
+            const response = await fetch('../data/shiny-groups.json', { cache: 'no-store' });
+            if (!response.ok) throw new Error(`Failed to load groups: ${response.status}`);
+
+            const data = await response.json();
+            const cycle = buildCycleGroups(data);
+            const updatedAt = new Date(data.updatedAt);
+
+            // 資料檔壞掉就明講，不要靜靜地用錯誤的基準一路算下去
+            if (!data.groups || !cycle || Number.isNaN(updatedAt.getTime())) {
+                throw new Error('shiny-groups.json 缺少 groups / currentStatusByGroup / updatedAt');
+            }
+
+            groups = data.groups;
+            cycleGroups = cycle;
+            anchorDayNumber = resetDayNumber(updatedAt);
+            return true;
+        } catch (error) {
+            console.error(error);
+            document.getElementById('groupName').innerText = '資料載入失敗';
+            document.getElementById('serverList').innerHTML = '';
+            return false;
+        }
+    }
+
+    // 2. 從錨點推算任一天的組別
+    function getGroupForDayNumber(dayNumber) {
+        const offset = (((dayNumber - anchorDayNumber) % 3) + 3) % 3; // +3 防止負數
+        return cycleGroups[offset];
+    }
+
+    const GROUP_LABELS = { 1: '第一組', 2: '第二組', 3: '第三組' };
+    const GROUP_COLORS = { 1: '#f59e0b', 2: '#10b981', 3: '#3b82f6' };
+    const RELATIVE_DAY_LABELS = ['今天', '明天', '後天'];
+
+    function updateDisplay() {
+        const dateValue = document.getElementById('dateInput').value;
+        if (!dateValue || cycleGroups === null) return;
+
+        const dayNumber = dayNumberFromInput(dateValue);
+        if (dayNumber === null) return;
+
+        const groupNum = getGroupForDayNumber(dayNumber);
+
+        const titleEl = document.getElementById('groupName');
+        titleEl.innerText = `${GROUP_LABELS[groupNum]} (Group ${groupNum})`;
+        titleEl.style.color = GROUP_COLORS[groupNum];
+
+        const listContainer = document.getElementById('serverList');
+        listContainer.innerHTML = '';
+        if (!groups[groupNum]) return;
+
+        groups[groupNum].sort((a,b) => a-b).forEach(server => {
+            const badge = document.createElement('div');
+            badge.className = 'badge';
+            badge.style.borderColor = GROUP_COLORS[groupNum];
+            badge.innerText = server;
+            listContainer.appendChild(badge);
+        });
+
+        // 日期換了要重跑搜尋：組別不會變，但「今天／明天」會變，高亮也要重新套用
+        if (document.getElementById('serverSearch').value) checkServer();
+    }
+
+    function findGroupOfServer(serverNum) {
+        for (const groupNumber in groups) {
+            if (groups[groupNumber].includes(serverNum)) return Number(groupNumber);
+        }
+        return null;
+    }
+
+    // 從指定的那天算起，還要幾天才輪到這一組（0 = 就是那天）
+    function daysUntilGroup(fromDayNumber, groupNumber) {
+        for (let offset = 0; offset < 3; offset += 1) {
+            if (getGroupForDayNumber(fromDayNumber + offset) === groupNumber) return offset;
+        }
+        return null;
+    }
+
+    // 搜尋到的伺服器如果就在畫面上的清單裡，把那一顆點亮
+    function highlightBadge(serverNum) {
+        for (const badge of document.getElementById('serverList').children) {
+            badge.classList.toggle('highlight', Number(badge.innerText) === serverNum);
+        }
+    }
+
+    function checkServer() {
+        const serverNum = parseInt(document.getElementById('serverSearch').value);
+        const resultDiv = document.getElementById('searchResult');
+
+        if (!serverNum) {
+            highlightBadge(null);
+            resultDiv.innerHTML = '<span style="color:var(--danger)">請輸入號碼</span>';
+            return;
+        }
+
+        const groupNumber = findGroupOfServer(serverNum);
+
+        if (groupNumber === null) {
+            highlightBadge(null);
+            resultDiv.innerHTML = `<span style="color:var(--danger)"><i class="fas fa-times"></i> 找不到伺服器 ${serverNum}</span>`;
+            return;
+        }
+
+        highlightBadge(serverNum);
+
+        const baseDayNumber = dayNumberFromInput(document.getElementById('dateInput').value);
+        const offset = daysUntilGroup(baseDayNumber, groupNumber);
+
+        // 只有在看的就是今天時才講「今天／明天／後天」，否則直接給日期，免得誤導
+        let whenText;
+        if (baseDayNumber === resetDayNumber(new Date())) {
+            whenText = `${RELATIVE_DAY_LABELS[offset]}輪到`;
+        } else if (offset === 0) {
+            whenText = '就是所選這天';
+        } else {
+            whenText = `${dayNumberToInput(baseDayNumber + offset)} 輪到`;
+        }
+
+        const color = GROUP_COLORS[groupNumber];
+        resultDiv.innerHTML =
+            `<span style="color:var(--success)"><i class="fas fa-check"></i> 伺服器 ${serverNum}：</span>`
+            + `<span style="color:${color};font-weight:700">${GROUP_LABELS[groupNumber]}</span>`
+            + `<span style="color:var(--text-sub)"> · </span>`
+            + `<span style="color:${color};font-weight:700">${whenText}</span>`;
+    }
+    
+    // 複製清單功能
+    async function copyList() {
+        const list = document.getElementById('serverList');
+        if (!list || list.children.length === 0) return;
+
+        // 整理文字
+        const servers = Array.from(list.children).map(badge => badge.innerText).join(', ');
+        const dateStr = document.getElementById('dateInput').value;
+
+        const textToCopy = `[閃亮任務小工具]\n重置日期: ${dateStr}\n今日閃亮清單:\n${servers}`;
+
+        if (await writeToClipboard(textToCopy)) {
+            showCopied();
+        } else {
+            alert('複製失敗，請手動選取文字複製');
+        }
+    }
+
+    async function writeToClipboard(text) {
+        // 本站走 HTTPS，優先用標準 API：手機（尤其 iOS Safari）成功率高很多
+        if (navigator.clipboard && window.isSecureContext) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (error) {
+                console.warn('Clipboard API 失敗，改用 execCommand', error);
+            }
+        }
+
+        // 舊瀏覽器 / 非安全內容的退路
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.setAttribute('readonly', '');
+        textArea.style.position = 'fixed';
+        textArea.style.top = '0';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        textArea.setSelectionRange(0, text.length); // iOS 要有這行才選得到
+
+        let copied = false;
+        try {
+            copied = document.execCommand('copy');
+        } catch (error) {
+            console.warn('execCommand 複製失敗', error);
+        }
+        document.body.removeChild(textArea);
+        return copied;
+    }
+
+    function showCopied() {
+        const btn = document.getElementById('copyBtn');
+        const originalText = '<i class="far fa-copy"></i> 複製清單';
+        btn.innerHTML = '<i class="fas fa-check"></i> 已複製';
+        btn.style.borderColor = "var(--success)";
+        btn.style.color = "var(--success)";
+
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.borderColor = "rgba(255,255,255,0.2)";
+            btn.style.color = "var(--text-sub)";
+        }, 2000);
+    }
+    
+    // 綁定 Enter 鍵
+    document.getElementById('serverSearch').addEventListener('keypress', function(e) {
+        if(e.key === 'Enter') checkServer();
+    });
+
+    function initDate() {
+        // 重置日 = (現在時間 - 2 小時) 的 UTC 日期，等同台灣時間 10:00 換日。
+        // 這樣算不必碰使用者裝置的時區，也就不會有跨日誤差。
+        document.getElementById('dateInput').value = dayNumberToInput(resetDayNumber(new Date()));
+        updateDisplay();
+    }
+
+    // 3. 到訪統計（可留空停用；設定方式見 analytics/README.md）
+    const ANALYTICS_ENDPOINT = 'https://lastwar-stats.jancheng-online-exam-system.workers.dev';
+
+    function recordVisit() {
+        if (!ANALYTICS_ENDPOINT) return;
+
+        // keepalive：使用者查完馬上關掉分頁也送得出去。
+        // 統計掛掉不能影響查詢功能，所以錯誤一律吞掉。
+        fetch(`${ANALYTICS_ENDPOINT}/hit?v=v2`, { method: 'POST', mode: 'cors', keepalive: true })
+            .catch(() => {});
+    }
+
+    document.getElementById('dateInput').addEventListener('change', updateDisplay);
+    loadShinyGroups().then((loaded) => {
+        if (loaded) initDate();
+    });
+    recordVisit();
+
+</script>
+
+</body>
+</html>
+
+

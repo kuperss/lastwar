@@ -80,35 +80,65 @@ async function handleHit(request, env) {
   }
 
   const day = taipeiDay(new Date());
+  const variant = readVariant(new URL(request.url));
   const hash = await visitorHash(request, day, env.VISITOR_SALT);
 
+  // 這個人今天有沒有看過「這一版」
   const inserted = await env.DB.prepare(
-    "INSERT OR IGNORE INTO visitor_seen (day, visitor_hash) VALUES (?, ?)",
+    "INSERT OR IGNORE INTO visitor_seen (day, variant, visitor_hash) VALUES (?, ?, ?)",
   )
-    .bind(day, hash)
+    .bind(day, variant, hash)
     .run();
 
-  const isNewVisitor = inserted.meta.changes > 0;
+  const isNewForVariant = inserted.meta.changes > 0;
+  let isNewForDay = false;
 
-  if (isNewVisitor) {
-    // request.cf 由 Cloudflare 邊緣節點附上，不必查任何資料庫，也不會存下 IP
-    const cf = request.cf ?? {};
-    const country = typeof cf.country === "string" && cf.country ? cf.country : "XX";
-    const city = typeof cf.city === "string" && cf.city ? cf.city : "";
+  if (isNewForVariant) {
+    // 這個 hash 今天總共出現在幾個版本？剛好 1 代表這是他今天第一次來，
+    // 才計入當日總人數，免得一個人看了兩版就被算成兩個人。
+    const seen = await env.DB.prepare(
+      "SELECT COUNT(*) AS appearances FROM visitor_seen WHERE day = ? AND visitor_hash = ?",
+    )
+      .bind(day, hash)
+      .first();
 
-    await env.DB.batch([
+    isNewForDay = seen.appearances === 1;
+
+    const statements = [
       env.DB.prepare(
-        `INSERT INTO daily_visits (day, visitors) VALUES (?, 1)
-         ON CONFLICT(day) DO UPDATE SET visitors = visitors + 1`,
-      ).bind(day),
-      env.DB.prepare(
-        `INSERT INTO daily_locations (day, country, city, visitors) VALUES (?, ?, ?, 1)
-         ON CONFLICT(day, country, city) DO UPDATE SET visitors = visitors + 1`,
-      ).bind(day, country, city),
-    ]);
+        `INSERT INTO daily_variants (day, variant, visitors) VALUES (?, ?, 1)
+         ON CONFLICT(day, variant) DO UPDATE SET visitors = visitors + 1`,
+      ).bind(day, variant),
+    ];
+
+    if (isNewForDay) {
+      // request.cf 由 Cloudflare 邊緣節點附上，不必查任何資料庫，也不會存下 IP
+      const cf = request.cf ?? {};
+      const country = typeof cf.country === "string" && cf.country ? cf.country : "XX";
+      const city = typeof cf.city === "string" && cf.city ? cf.city : "";
+
+      statements.push(
+        env.DB.prepare(
+          `INSERT INTO daily_visits (day, visitors) VALUES (?, 1)
+           ON CONFLICT(day) DO UPDATE SET visitors = visitors + 1`,
+        ).bind(day),
+        env.DB.prepare(
+          `INSERT INTO daily_locations (day, country, city, visitors) VALUES (?, ?, ?, 1)
+           ON CONFLICT(day, country, city) DO UPDATE SET visitors = visitors + 1`,
+        ).bind(day, country, city),
+      );
+    }
+
+    await env.DB.batch(statements);
   }
 
-  return json({ ok: true, counted: isNewVisitor }, request, env);
+  return json({ ok: true, counted: isNewForDay, variant }, request, env);
+}
+
+// 版本代號只允許小寫英數與連字號，其餘一律歸到 unknown，避免被塞進奇怪的值
+function readVariant(url) {
+  const raw = url.searchParams.get("v") ?? "";
+  return /^[a-z0-9-]{1,16}$/.test(raw) ? raw : "unknown";
 }
 
 // 把 (國家, 城市, 人數) 的扁平列表整理成國家底下掛城市，兩層都由多到少排序
@@ -152,7 +182,7 @@ async function handleStats(request, env) {
   const today = taipeiDay(new Date());
   const since = shiftDay(today, -(days - 1));
 
-  const [recent, totals, locations] = await env.DB.batch([
+  const [recent, totals, locations, variants] = await env.DB.batch([
     env.DB.prepare(
       "SELECT day, visitors FROM daily_visits WHERE day >= ? ORDER BY day ASC",
     ).bind(since),
@@ -167,6 +197,13 @@ async function handleStats(request, env) {
        FROM daily_locations
        WHERE day >= ?
        GROUP BY country, city`,
+    ).bind(since),
+    env.DB.prepare(
+      `SELECT variant, SUM(visitors) AS visitors
+       FROM daily_variants
+       WHERE day >= ?
+       GROUP BY variant
+       ORDER BY visitors DESC`,
     ).bind(since),
   ]);
 
@@ -189,8 +226,10 @@ async function handleStats(request, env) {
       activeDays: summary.activeDays,
       firstDay: summary.firstDay,
       series,
-      // 只涵蓋這次查詢的天數區間，跟 totalVisitors（全期間）不會相等
+      // 以下兩段只涵蓋這次查詢的天數區間，跟 totalVisitors（全期間）不會相等。
+      // variants 的總和也可能大於當日人數 —— 同一個人看了兩版，兩版各算一次。
       countries: buildLocationTree(locations.results),
+      variants: variants.results,
     },
     request,
     env,

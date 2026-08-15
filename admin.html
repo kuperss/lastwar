@@ -246,6 +246,20 @@
 
         .loc-city span:last-child { font-family: 'Orbitron', sans-serif; }
 
+        /* 版本清單沒有國旗那一欄，把縮排收掉 */
+        .variant-list .loc-track,
+        .variant-list .loc-sub { margin-left: 0; }
+
+        .variant-list .loc-name strong { font-family: 'Orbitron', sans-serif; margin-right: 8px; }
+
+        .loc-sub {
+            margin-top: 6px;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+        }
+
+        .loc-sub.missing { color: var(--danger); }
+
         /* 表格 */
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         th, td { padding: 8px 10px; text-align: left; }
@@ -328,6 +342,14 @@
                 <span id="axisStart"></span>
                 <span id="axisEnd"></span>
             </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <div class="panel-title">各版本使用量</div>
+                <div class="panel-title" id="variantRange" style="font-size:0.78rem;"></div>
+            </div>
+            <div class="loc-list variant-list" id="variantList"></div>
         </div>
 
         <div class="panel">
@@ -445,6 +467,56 @@
         }
     }
 
+    // variants.json 跟 admin.html 都在網站根目錄，讀得到就能把 v2 顯示成有意義的名字
+    let variantMeta = null;
+    async function loadVariantMeta() {
+        if (variantMeta) return variantMeta;
+
+        try {
+            const response = await fetch('./variants.json', { cache: 'no-store' });
+            if (!response.ok) throw new Error(String(response.status));
+
+            const data = await response.json();
+            variantMeta = new Map(data.variants.map((item) => [item.id, item]));
+        } catch (error) {
+            console.warn('讀不到 variants.json，版本只會顯示代號', error);
+            variantMeta = new Map();
+        }
+
+        return variantMeta;
+    }
+
+    function renderVariants(variants, days) {
+        const list = $('variantList');
+        $('variantRange').innerText = `最近 ${days} 天`;
+
+        if (!variants || variants.length === 0) {
+            list.innerHTML = '<div class="msg">還沒有資料</div>';
+            return;
+        }
+
+        const max = Math.max(...variants.map((entry) => entry.visitors));
+
+        list.innerHTML = variants.map((entry) => {
+            const meta = variantMeta.get(entry.variant);
+            const where = meta ? (meta.path === '' ? '首頁' : `/${escapeHtml(meta.path)}/`) : '';
+            const sub = meta
+                ? `<div class="loc-sub">${where}　${escapeHtml(meta.signature)}${meta.enabled === false ? '　（已下架）' : ''}</div>`
+                : '<div class="loc-sub missing">這個代號不在 variants.json 裡</div>';
+
+            const width = Math.max(3, Math.round((entry.visitors / max) * 100));
+
+            return `<div>
+                <div class="loc-row">
+                    <span class="loc-name"><strong>${escapeHtml(entry.variant)}</strong></span>
+                    <span class="loc-count">${entry.visitors}</span>
+                </div>
+                <div class="loc-track"><div class="loc-bar" style="width:${width}%"></div></div>
+                ${sub}
+            </div>`;
+        }).join('');
+    }
+
     function renderLocations(countries, days) {
         const list = $('locList');
         $('locRange').innerText = `最近 ${days} 天`;
@@ -491,6 +563,7 @@
         $('statAverage').innerText = average.toFixed(average >= 10 ? 0 : 1);
 
         renderChart(data.series, data.today);
+        renderVariants(data.variants, currentDays);
         renderLocations(data.countries, currentDays);
         renderTable(data.series);
 
@@ -505,7 +578,8 @@
 
     async function load(key, days) {
         try {
-            render(await fetchStats(key, days));
+            const [data] = await Promise.all([fetchStats(key, days), loadVariantMeta()]);
+            render(data);
         } catch (error) {
             if (error.unauthorized) {
                 localStorage.removeItem(STORAGE_KEY);

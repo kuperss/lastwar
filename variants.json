@@ -1,0 +1,38 @@
+{
+  "_說明": [
+    "每個版本只記錄它跟別人不一樣的那幾個字，程式碼共用 templates/index.template.html。",
+    "改完這個檔案要跑 build-variants.bat（或 node scripts/build-variants.mjs）才會生效。",
+    "enabled 設成 false 的版本不會被產生，已經存在的資料夾也會被刪掉，等於下架。",
+    "path 是網址的資料夾名稱，空字串代表根目錄（第一版的網址維持不變，不要改它）。",
+    "id 會送給到訪統計用來分辨版本，取好之後不要改，改了統計就會斷成兩截。"
+  ],
+  "variants": [
+    {
+      "id": "v1",
+      "path": "",
+      "enabled": true,
+      "title": "閃亮隱祕任務速查工具",
+      "subtitle": "專屬於KT 的每位小夥伴",
+      "signature": "by 1389 KupeR",
+      "copyPrefix": "[閃亮任務小工具]"
+    },
+    {
+      "id": "v2",
+      "path": "v2",
+      "enabled": true,
+      "title": "閃亮隱祕任務速查工具",
+      "subtitle": "專屬於KT 的每位小夥伴",
+      "signature": "by 1394 KupeR",
+      "copyPrefix": "[閃亮任務小工具]"
+    },
+    {
+      "id": "v3",
+      "path": "v3",
+      "enabled": false,
+      "title": "閃亮隱祕任務速查工具",
+      "subtitle": "專屬於KT 的每位小夥伴",
+      "signature": "by 1394 KupeR",
+      "copyPrefix": "[閃亮任務小工具]"
+    }
+  ]
+}

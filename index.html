@@ -1,3 +1,6 @@
+<!-- ⚠️ 這個檔案是產生出來的，不要手動編輯 ⚠️ -->
+<!-- 要改內容：templates/index.template.html（共用程式碼）或 variants.json（各版本的文字） -->
+<!-- 改完跑 build-variants.bat 重新產生 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -567,7 +570,7 @@
 
         // keepalive：使用者查完馬上關掉分頁也送得出去。
         // 統計掛掉不能影響查詢功能，所以錯誤一律吞掉。
-        fetch(`${ANALYTICS_ENDPOINT}/hit`, { method: 'POST', mode: 'cors', keepalive: true })
+        fetch(`${ANALYTICS_ENDPOINT}/hit?v=v1`, { method: 'POST', mode: 'cors', keepalive: true })
             .catch(() => {});
     }
 

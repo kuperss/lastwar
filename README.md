@@ -20,9 +20,33 @@
 
 ## 三個組成部分
 
-### 1. `index.html` — 前台
+### 1. 前台（多版本）
 
-單檔靜態頁，沒有任何建置流程，改完 push 就上線。
+前台可以同時上線好幾個版本，程式碼共用，只有幾行文字不一樣。
+
+| 檔案 | 角色 |
+|---|---|
+| `templates/index.template.html` | **範本**，所有共用的 HTML／CSS／JS 都在這裡 |
+| `variants.json` | 每個版本各自不同的文字 |
+| `scripts/build-variants.mjs` | 產生器 |
+
+產生出來的 `index.html`、`v2/index.html` 都標了「不要手動編輯」。**改東西一律改範本或
+`variants.json`**，然後：
+
+```bash
+node scripts/build-variants.mjs
+```
+
+或雙擊 `build-variants.bat`。產出仍是單檔靜態頁，跟手寫的一樣快。
+
+**新增一版**：在 `variants.json` 的 `variants` 陣列複製一組，改 `id`、`path` 和要換的文字。
+**下架一版**：把該版的 `enabled` 改成 `false`，重跑產生器，那個資料夾會自動刪掉。
+根目錄那一版不能下架（首頁不能是空的），產生器會擋。
+
+`id` 會送給到訪統計用來分辨版本，**取好之後不要改**，改了統計會斷成兩截。
+
+每個版本的功能完全相同：選日期查當天輪到的組別與伺服器清單、一鍵複製、反查某台伺服器
+屬於哪一組還要幾天輪到。
 
 選日期會顯示當天輪到的組別與完整伺服器清單，可一鍵複製丟群組；也能反查某台伺服器
 屬於哪一組、還要幾天才輪到。
@@ -70,10 +94,17 @@ python -m http.server 8791
 ## 檔案
 
 ```
-index.html                    前台（內嵌 CSS/JS，無相依套件）
-admin.html                    後台到訪統計
-data/shiny-groups.json        分組資料，唯一真相來源
-scripts/read-shiny-tasks.mjs  產生上面那份資料
-update-shiny-groups.bat       一鍵更新並推上 GitHub
-analytics/                    Cloudflare Worker + D1 到訪統計
+templates/index.template.html  前台範本 ← 改這裡
+variants.json                  各版本的文字 ← 或改這裡
+scripts/build-variants.mjs     產生器
+build-variants.bat             一鍵產生
+
+index.html                     ⚠️ 產生出來的，不要手動改
+v2/index.html                  ⚠️ 產生出來的，不要手動改
+
+admin.html                     後台到訪統計
+data/shiny-groups.json         分組資料，唯一真相來源
+scripts/read-shiny-tasks.mjs   產生上面那份資料
+update-shiny-groups.bat        一鍵更新資料並推上 GitHub
+analytics/                     Cloudflare Worker + D1 到訪統計
 ```

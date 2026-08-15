@@ -26,6 +26,19 @@ GitHub Pages 是純靜態空間，沒有辦法自己數人頭，所以計數放�
 > 這是刻意選擇的取捨；只想要國家的話，把 worker 裡寫入 `daily_locations` 的
 > `city` 固定成空字串即可，其他都不用動。
 
+## 版本
+
+前台可以有多個版本（見專案根目錄的 `variants.json`），前台呼叫 `/hit?v=<id>` 帶上自己的
+版本代號。代號只接受小寫英數與連字號，其餘一律歸到 `unknown`。
+
+去重的方式是**每個版本各自去重**：`visitor_seen` 的主鍵是 `(day, variant, visitor_hash)`，
+所以同一個人看了兩版會有兩列，`daily_variants` 兩版各加一。
+
+但「當日總人數」不會因此重複計算 —— 寫入前會先數這個 hash 今天總共出現在幾個版本，
+**剛好 1 才算新訪客**，才寫 `daily_visits` 與 `daily_locations`。
+
+換句話說：`variants` 的總和 ≥ 當日總人數，差額就是同時看了多個版本的人。
+
 ## 部署步驟
 
 需要一個 Cloudflare 免費帳號。以下指令都在 `analytics/` 資料夾裡跑。
@@ -146,13 +159,24 @@ ADMIN_KEY=local-test-key
 
 ## 改了 schema 之後
 
-`schema.sql` 全部是 `CREATE TABLE IF NOT EXISTS`，直接重跑就是安全的遷移：
+`schema.sql` 全部是 `CREATE TABLE IF NOT EXISTS`，**新增**資料表或索引時直接重跑就好：
 
 ```bash
 npx wrangler d1 execute lastwar-stats --remote --file=schema.sql
 ```
 
 新欄位只會從執行的那一刻開始有資料，**既有的舊資料補不回來**。
+
+⚠️ 但 `IF NOT EXISTS` **不會修改已經存在的資料表**。像加版本統計時 `visitor_seen` 的主鍵
+從 `(day, hash)` 變成 `(day, variant, hash)`，就必須先手動 DROP 再重跑：
+
+```bash
+npx wrangler d1 execute lastwar-stats --remote --command "DROP TABLE IF EXISTS visitor_seen;"
+```
+
+`visitor_seen` 可以安全地 DROP —— 它只是 7 天內的去重暫存，統計數字都在 `daily_visits`
+和 `daily_locations` 裡，不受影響。唯一的副作用是當天的去重狀態歸零，同一個人如果當天
+再訪一次會被多算一次。**其他資料表不要這樣處理，那會真的刪掉統計。**
 
 ## 費用
 
